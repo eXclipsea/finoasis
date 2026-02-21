@@ -98,21 +98,20 @@ export async function POST(request: Request) {
           });
         }
 
-        // Apply Gamification Updates to Pet and City
+        // Apply Gamification Updates to Pet and Yard
         if (totalXpEarned > 0 || savingsAmount > 0) {
-          // 1. Update City (Base Builder)
-          const { data: city } = await supabase
-            .from('cities')
-            .select('funds, population')
+          // 1. Update Yard (Home Builder)
+          const { data: yard } = await supabase
+            .from('yards')
+            .select('coins')
             .eq('user_id', account.user_id)
             .single();
 
-          if (city) {
+          if (yard) {
             await supabase
-              .from('cities')
+              .from('yards')
               .update({
-                funds: Number(city.funds) + savingsAmount,
-                population: city.population + Math.floor(totalXpEarned / 10), // 10 XP = 1 new citizen
+                coins: Number(yard.coins) + savingsAmount,
               })
               .eq('user_id', account.user_id);
           }
@@ -131,7 +130,7 @@ export async function POST(request: Request) {
 
             // Simple evolution logic
             if (pet.stage === 'egg' && totalXpEarned > 50) newStage = 'baby';
-            else if (pet.stage === 'baby' && city?.population > 150) newStage = 'teen';
+            else if (pet.stage === 'baby' && totalXpEarned > 200) newStage = 'teen';
 
             await supabase
               .from('pets')
