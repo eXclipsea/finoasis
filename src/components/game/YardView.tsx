@@ -200,10 +200,7 @@ export default function YardView({ yardId, coins: initialCoins, pet, profile, ba
           )}
         </div>
       );
-    }onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        
+    }
     return (
       <div className="flex items-end justify-center h-full w-full text-slate-800">
         <Sofa className="h-12 w-12 text-amber-600 mb-2 drop-shadow-lg" />
@@ -222,6 +219,9 @@ export default function YardView({ yardId, coins: initialCoins, pet, profile, ba
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
           transition: isDragging ? 'none' : 'transform 0.1s ease-out'
