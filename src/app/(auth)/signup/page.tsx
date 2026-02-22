@@ -27,7 +27,7 @@ export default async function SignupPage({
     });
 
     if (error) {
-      return redirect('/signup?message=Could not create account');
+      return redirect(`/signup?message=${encodeURIComponent(error.message)}`);
     }
 
     // 2. If session exists immediately (Email Confirmations DISABLED in Supabase), redirect to dashboard
