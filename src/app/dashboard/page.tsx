@@ -42,7 +42,7 @@ export default async function DashboardPage() {
   return (
     <RoomView 
       yardId={yard?.id || ''} 
-      coins={yard?.coins || 0} 
+      carrots={yard?.coins || 0} 
       pet={pet}
       profile={profile}
       bankAccounts={bankAccounts || []}

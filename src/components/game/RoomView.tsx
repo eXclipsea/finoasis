@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
-  Home, 
-  Shirt, 
-  Sofa, 
-  Wallet, 
   Settings, 
   X,
   Sparkles,
   Heart,
-  Coins,
   Sprout,
+  Palette,
+  Move,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
   Plus
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -19,16 +19,21 @@ import PlaidLinkButton from '@/components/plaid/PlaidLinkButton';
 import { useRouter } from 'next/navigation';
 import { 
   FurnitureItem, 
-  PetCharacter, 
+  PotatoCharacter, 
+  DogCharacter,
+  CarrotIcon,
   FURNITURE_ITEMS, 
   PLANT_ITEMS, 
   DECOR_ITEMS,
-  CLOTHING_ITEMS
+  CLOTHING_ITEMS,
+  WALL_COLORS,
+  FLOOR_COLORS,
+  COLORS
 } from '@/components/game/FurnitureAssets';
 
 interface RoomViewProps {
   yardId: string;
-  coins: number;
+  carrots: number;
   pet: {
     id: string;
     name: string;
@@ -43,668 +48,727 @@ interface RoomViewProps {
 
 interface PlacedItem {
   id: string;
+  uniqueId: string;
   type: string;
   category: 'furniture' | 'plant' | 'decor' | 'clothing';
   x: number;
   y: number;
   rotation?: number;
-  variant?: string;
 }
 
-type SidebarTab = 'shop' | 'closet' | 'bank' | 'settings' | null;
+interface Room {
+  id: string;
+  name: string;
+  floorColor: string;
+  wallColor: string;
+  items: PlacedItem[];
+  doors: { targetRoomId: string; position: 'left' | 'right' | 'top' | 'bottom' }[];
+}
 
-// Admin email for infinite coins
-const ADMIN_EMAIL = '2landonl10@gmail.com';
+// Custom styled button for bottom toolbar
+const ToolbarButton = ({ 
+  icon, 
+  label, 
+  active, 
+  onClick, 
+  badge 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  active?: boolean; 
+  onClick: () => void;
+  badge?: number;
+}) => (
+  <button
+    onClick={onClick}
+    className={`relative group flex flex-col items-center transition-all duration-200 ${active ? 'scale-110' : ''}`}
+  >
+    {/* Button background - potato shape */}
+    <div className={`relative w-16 h-16 transition-all duration-200 ${
+      active 
+        ? 'bg-gradient-to-br from-[#C4A574] to-[#A68B5B]' 
+        : 'bg-gradient-to-br from-[#D4B896] to-[#C4A574] hover:from-[#C4A574] hover:to-[#A68B5B]'
+    }`}
+    style={{
+      borderRadius: '60% 40% 50% 50% / 50% 60% 40% 50%',
+      boxShadow: active 
+        ? '0 8px 20px rgba(196, 165, 116, 0.5), inset 0 -3px 0 rgba(0,0,0,0.1)' 
+        : '0 4px 12px rgba(0,0,0,0.15), inset 0 -2px 0 rgba(0,0,0,0.1)'
+    }}>
+      <div className="absolute inset-0 flex items-center justify-center text-[#3D2914]">
+        {icon}
+      </div>
+      {/* Badge */}
+      {badge !== undefined && badge > 0 && (
+        <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF8C42] rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-[#F5EDE4]">
+          {badge}
+        </div>
+      )}
+    </div>
+    {/* Label */}
+    <span className={`mt-2 text-xs font-bold ${active ? 'text-[#6B4423]' : 'text-[#8B7355]'} group-hover:text-[#6B4423]`}>
+      {label}
+    </span>
+  </button>
+);
 
-export default function RoomView({ yardId, coins: initialCoins, pet, profile, bankAccounts, user }: RoomViewProps) {
+export default function RoomView({ 
+  yardId, 
+  carrots: initialCarrots = 0, 
+  pet, 
+  profile, 
+  bankAccounts = [],
+  user
+}: RoomViewProps) {
   const router = useRouter();
-  const isAdmin = user?.email === ADMIN_EMAIL;
-  const [coins, setCoins] = useState(isAdmin ? 999999 : initialCoins);
-  const [activeTab, setActiveTab] = useState<SidebarTab>(null);
-  const [showBankModal, setShowBankModal] = useState(bankAccounts.length === 0 && !isAdmin);
-  const [isMobile, setIsMobile] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<string | null>(null);
-  const [petPosition, setPetPosition] = useState({ x: 225, y: 225 });
+  const supabase = createClient();
   
-  // Room items state - starts empty (blank room)
-  const [items, setItems] = useState<PlacedItem[]>([]);
+  const isAdmin = user?.email === '2landonl10@gmail.com';
+  const [carrots, setCarrots] = useState(isAdmin ? 999999 : initialCarrots);
   
-  // Check if mobile on mount
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  // Multi-room system
+  const [rooms, setRooms] = useState<Room[]>([
+    {
+      id: 'living-room',
+      name: 'Living Room',
+      floorColor: COLORS.floorWood,
+      wallColor: COLORS.wallBeige,
+      items: [],
+      doors: [{ targetRoomId: 'bedroom', position: 'right' }]
+    },
+    {
+      id: 'bedroom',
+      name: 'Bedroom',
+      floorColor: COLORS.floorLight,
+      wallColor: COLORS.wallBlue,
+      items: [],
+      doors: [{ targetRoomId: 'living-room', position: 'left' }]
+    }
+  ]);
+  const [currentRoomId, setCurrentRoomId] = useState('living-room');
+  const currentRoom = rooms.find(r => r.id === currentRoomId) || rooms[0];
+  
+  // UI State
+  const [activeTab, setActiveTab] = useState<'shop' | 'decorate' | 'settings' | null>(null);
+  const [selectedItem, setSelectedItem] = useState<PlacedItem | null>(null);
+  const [isPlacingItem, setIsPlacingItem] = useState<string | null>(null);
+  const [isMovingPotato, setIsMovingPotato] = useState(false);
+  const [potatoPosition, setPotatoPosition] = useState({ x: 50, y: 50 });
+  const [dogPosition, setDogPosition] = useState({ x: 30, y: 60 });
+  const [inventory, setInventory] = useState<PlacedItem[]>([]);
+  const [outfit, setOutfit] = useState<string[]>([]);
 
-  // Pet movement animation
+  // Potato movement animation
   useEffect(() => {
     const interval = setInterval(() => {
-      setPetPosition({
-        x: 150 + Math.random() * 150,
-        y: 150 + Math.random() * 150,
-      });
-    }, 5000);
+      // Random potato wiggle
+      if (Math.random() > 0.7) {
+        setPotatoPosition(prev => ({
+          x: Math.max(20, Math.min(80, prev.x + (Math.random() - 0.5) * 5)),
+          y: Math.max(30, Math.min(70, prev.y + (Math.random() - 0.5) * 3))
+        }));
+      }
+      // Dog follows potato occasionally
+      if (Math.random() > 0.6) {
+        setDogPosition(prev => ({
+          x: prev.x + (potatoPosition.x - prev.x) * 0.1,
+          y: prev.y + (potatoPosition.y - prev.y + 10) * 0.1
+        }));
+      }
+    }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [potatoPosition]);
 
-  const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
-  };
-
-  const handleBuyItem = (itemType: string, category: 'furniture' | 'plant' | 'decor', price: number) => {
-    if (!isAdmin && coins < price) return;
+  const handleBuyItem = useCallback((itemId: string, category: string, price: number) => {
+    if (!isAdmin && carrots < price) return;
     
     const newItem: PlacedItem = {
-      id: Date.now().toString(),
-      type: itemType,
-      category,
-      x: Math.floor(Math.random() * 7) + 1,
-      y: Math.floor(Math.random() * 7) + 1,
-      rotation: 0,
+      id: itemId,
+      uniqueId: `${itemId}-${Date.now()}`,
+      type: itemId,
+      category: category as any,
+      x: 40 + Math.random() * 20,
+      y: 40 + Math.random() * 15,
+      rotation: 0
     };
     
-    setItems([...items, newItem]);
+    setInventory(prev => [...prev, newItem]);
     if (!isAdmin) {
-      setCoins(coins - price);
+      setCarrots(prev => prev - price);
     }
+  }, [carrots, isAdmin]);
+
+  const handlePlaceItem = useCallback((item: PlacedItem) => {
+    setRooms(prev => prev.map(room => {
+      if (room.id === currentRoomId) {
+        return { ...room, items: [...room.items, item] };
+      }
+      return room;
+    }));
+    setInventory(prev => prev.filter(i => i.uniqueId !== item.uniqueId));
+    setIsPlacingItem(null);
+    setActiveTab(null);
+  }, [currentRoomId]);
+
+  const handleMoveItem = useCallback((uniqueId: string, newX: number, newY: number) => {
+    setRooms(prev => prev.map(room => {
+      if (room.id === currentRoomId) {
+        return {
+          ...room,
+          items: room.items.map(item => 
+            item.uniqueId === uniqueId ? { ...item, x: newX, y: newY } : item
+          )
+        };
+      }
+      return room;
+    }));
+  }, [currentRoomId]);
+
+  const handleDeleteItem = useCallback((uniqueId: string) => {
+    setRooms(prev => prev.map(room => {
+      if (room.id === currentRoomId) {
+        return {
+          ...room,
+          items: room.items.filter(item => item.uniqueId !== uniqueId)
+        };
+      }
+      return room;
+    }));
+    setSelectedItem(null);
+  }, [currentRoomId]);
+
+  const handleRoomChange = useCallback((targetRoomId: string) => {
+    setIsMovingPotato(true);
+    // Animate potato walking to door
+    setTimeout(() => {
+      setCurrentRoomId(targetRoomId);
+      setIsMovingPotato(false);
+      // Reset potato position in new room
+      setPotatoPosition({ x: 50, y: 50 });
+      setDogPosition({ x: 40, y: 60 });
+    }, 800);
+  }, []);
+
+  const handleColorChange = useCallback((type: 'floor' | 'wall', color: string) => {
+    setRooms(prev => prev.map(room => {
+      if (room.id === currentRoomId) {
+        return { 
+          ...room, 
+          [type === 'floor' ? 'floorColor' : 'wallColor']: color 
+        };
+      }
+      return room;
+    }));
+  }, [currentRoomId]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
   };
 
-  // Render the isometric room
-  const renderRoom = () => {
-    return (
-      <div className="relative w-full h-full flex items-center justify-center">
-        {/* Room container with isometric transform */}
-        <div 
-          className="relative transition-transform duration-500"
-          style={{
-            transform: isMobile 
-              ? 'rotateX(55deg) rotateZ(45deg) scale(0.65)' 
-              : 'rotateX(55deg) rotateZ(45deg) scale(1.1)',
-            transformStyle: 'preserve-3d',
-          }}
-        >
-          {/* Floor - BIGGER (450px) */}
-          <div className="relative w-[450px] h-[450px] bg-[#E6D5C3] rounded-lg shadow-2xl">
-            {/* Floor wood pattern */}
-            <div className="absolute inset-2 bg-[#D4C4B0] rounded">
-              {/* Wood planks */}
-              <div className="w-full h-full grid grid-cols-8 grid-rows-8 gap-[2px]">
-                {Array.from({ length: 64 }).map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`rounded-sm ${
-                      i % 3 === 0 ? 'bg-[#C9B8A4]' : 
-                      i % 3 === 1 ? 'bg-[#D4C4B0]' : 
-                      'bg-[#DECCB8]'
-                    }`} 
-                  />
-                ))}
-              </div>
-            </div>
-            
-            {/* Room grid overlay for placement */}
-            <div className="absolute inset-2 grid grid-cols-9 grid-rows-9">
-              {Array.from({ length: 81 }).map((_, i) => (
-                <div 
-                  key={i} 
-                  className="border border-[#B8A890]/10"
-                />
-              ))}
-            </div>
-            
-            {/* Room items */}
-            {items.map((item) => (
-              <RoomItem key={item.id} item={item} />
-            ))}
-            
-            {/* Pet character */}
-            <div 
-              className="absolute transition-all duration-[3000ms] ease-in-out"
-              style={{
-                left: `${petPosition.x}px`,
-                top: `${petPosition.y}px`,
-                transform: 'rotateZ(-45deg) rotateX(-55deg) translateZ(20px)',
-                zIndex: 100,
-              }}
-            >
-              <PetAvatar stage={pet?.stage || 'egg'} name={pet?.name || 'Buddy'} />
-            </div>
-          </div>
-          
-          {/* Back wall */}
-          <div 
-            className="absolute -top-[150px] left-0 w-[450px] h-[150px] bg-[#FDF8F3] origin-bottom rounded-t-lg"
-            style={{ transform: 'rotateX(-90deg)' }}
-          >
-            {/* Window - arched like Focus Friend */}
-            <div className="absolute top-6 left-1/2 -translate-x-1/2">
-              <svg width="80" height="100" viewBox="0 0 80 100" className="drop-shadow-md">
-                {/* Window frame */}
-                <path d="M10,40 Q10,10 40,10 Q70,10 70,40 L70,90 L10,90 Z" fill="#E8F4F8" stroke="#B8D4E3" strokeWidth="4"/>
-                {/* Window panes */}
-                <line x1="40" y1="10" x2="40" y2="90" stroke="#B8D4E3" strokeWidth="2"/>
-                <line x1="10" y1="50" x2="70" y2="50" stroke="#B8D4E3" strokeWidth="2"/>
-                {/* Sky gradient */}
-                <path d="M14,40 Q14,14 40,14 Q66,14 66,40 L66,86 L14,86 Z" fill="url(#skyGradient)"/>
-                {/* Clouds in window */}
-                <circle cx="30" cy="35" r="8" fill="white" opacity="0.8"/>
-                <circle cx="40" cy="30" r="10" fill="white" opacity="0.8"/>
-                <circle cx="50" cy="35" r="8" fill="white" opacity="0.8"/>
-                <defs>
-                  <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#87CEEB"/>
-                    <stop offset="100%" stopColor="#E8F4F8"/>
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            
-            {/* Wall decorations */}
-            <div className="absolute top-8 left-8">
-              <svg width="30" height="40" viewBox="0 0 30 40" className="drop-shadow-sm">
-                <rect x="2" y="2" width="26" height="36" fill="#8B7355" rx="2"/>
-                <rect x="5" y="5" width="20" height="30" fill="#F5E6D3"/>
-                <circle cx="15" cy="15" r="6" fill="#7EB8A2"/>
-              </svg>
-            </div>
-            
-            {/* Star decoration */}
-            <div className="absolute top-10 right-10">
-              <svg width="24" height="24" viewBox="0 0 24 24" className="animate-pulse">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#E8A87C"/>
-              </svg>
-            </div>
-          </div>
-          
-          {/* Side wall */}
-          <div 
-            className="absolute top-0 -left-[150px] w-[150px] h-[450px] bg-[#F5EDE4] origin-right rounded-l-lg"
-            style={{ transform: 'rotateY(90deg)' }}
-          >
-            {/* Picture frame on side wall */}
-            <div className="absolute top-10 left-1/2 -translate-x-1/2">
-              <svg width="50" height="60" viewBox="0 0 50 60" className="drop-shadow-md">
-                <rect x="5" y="5" width="40" height="50" fill="#8B7355" rx="3"/>
-                <rect x="8" y="8" width="34" height="44" fill="#FDF8F3" rx="2"/>
-                {/* Simple mountain art */}
-                <path d="M12,35 L20,20 L28,30 L35,15 L42,35 Z" fill="#7EB8A2" opacity="0.6"/>
-                <circle cx="35" cy="18" r="4" fill="#E8A87C" opacity="0.5"/>
-              </svg>
-            </div>
-            
-            {/* Plant on side wall shelf */}
-            <div className="absolute top-40 left-1/2 -translate-x-1/2">
-              <svg width="35" height="45" viewBox="0 0 35 45">
-                {/* Shelf */}
-                <rect x="0" y="35" width="35" height="6" fill="#8B7355" rx="1"/>
-                {/* Pot */}
-                <path d="M10,35 L12,25 L25,25 L27,35 Z" fill="#D9976B"/>
-                {/* Plant leaves */}
-                <ellipse cx="18" cy="22" rx="6" ry="10" fill="#7EB8A2"/>
-                <ellipse cx="14" cy="24" rx="5" ry="8" fill="#6BA08A"/>
-                <ellipse cx="22" cy="24" rx="5" ry="8" fill="#8ABFA8"/>
-              </svg>
-            </div>
-          </div>
+  // ========== RENDER ==========
+  return (
+    <div className="flex flex-col h-screen bg-gradient-to-b from-[#B8D4E8] via-[#D4E8D4] to-[#E8D4B8] overflow-hidden relative">
+      {/* Animated Background Scenery - Rolling Hills */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Far hills */}
+        <svg className="absolute bottom-0 w-full h-[40%]" preserveAspectRatio="none" viewBox="0 0 1200 300">
+          <path d="M0 150 Q150 80 300 120 Q450 160 600 100 Q750 40 900 110 Q1050 180 1200 130 L1200 300 L0 300 Z" 
+                fill="#7EB8A2" opacity="0.4"/>
+          <path d="M0 180 Q200 120 400 160 Q600 200 800 140 Q1000 80 1200 160 L1200 300 L0 300 Z" 
+                fill="#8BC48E" opacity="0.5"/>
+        </svg>
+        {/* Near hills */}
+        <svg className="absolute bottom-0 w-full h-[25%]" preserveAspectRatio="none" viewBox="0 0 1200 200">
+          <path d="M0 120 Q150 80 300 110 Q450 140 600 90 Q750 50 900 100 Q1050 150 1200 110 L1200 200 L0 200 Z" 
+                fill="#A67B5B" opacity="0.3"/>
+        </svg>
+        {/* Carrot farm patch in distance */}
+        <div className="absolute bottom-[20%] left-[5%] opacity-40">
+          <svg width="60" height="40" viewBox="0 0 70 50">
+            <ellipse cx="35" cy="40" rx="30" ry="8" fill="#5D3A1A"/>
+            <ellipse cx="20" cy="38" rx="3" ry="5" fill="#FF8C42"/>
+            <path d="M20 35 L17 25" stroke="#4CAF50" strokeWidth="2"/>
+            <ellipse cx="35" cy="38" rx="3" ry="6" fill="#FF8C42"/>
+            <path d="M35 34 L32 24" stroke="#4CAF50" strokeWidth="2"/>
+            <ellipse cx="50" cy="38" rx="3" ry="5" fill="#FF8C42"/>
+            <path d="M50 35 L47 25" stroke="#4CAF50" strokeWidth="2"/>
+          </svg>
         </div>
-      </div>
-    );
-  };
-
-  // Desktop layout with sidebar
-  const DesktopLayout = () => (
-    <div className="flex h-screen bg-gradient-to-br from-[#F5EDE4] via-[#E6D5C3] to-[#D4C4B0] overflow-hidden">
-      {/* Left sidebar - Navigation */}
-      <div className="w-20 bg-[#FDF8F3]/90 backdrop-blur-xl border-r-2 border-[#C9B8A4] flex flex-col items-center py-6 gap-4 z-20">
-        <div className="w-14 h-14 bg-[#A67B5B] rounded-2xl flex items-center justify-center shadow-lg mb-4">
-          <Home className="w-7 h-7 text-white" />
-        </div>
-        
-        <NavButton 
-          icon={<Sofa className="w-6 h-6" />} 
-          label="Shop" 
-          active={activeTab === 'shop'}
-          onClick={() => setActiveTab(activeTab === 'shop' ? null : 'shop')}
-        />
-        <NavButton 
-          icon={<Shirt className="w-6 h-6" />} 
-          label="Closet" 
-          active={activeTab === 'closet'}
-          onClick={() => setActiveTab(activeTab === 'closet' ? null : 'closet')}
-        />
-        <NavButton 
-          icon={<Wallet className="w-6 h-6" />} 
-          label="Bank" 
-          active={activeTab === 'bank'}
-          onClick={() => setActiveTab(activeTab === 'bank' ? null : 'bank')}
-        />
-        <NavButton 
-          icon={<Settings className="w-6 h-6" />} 
-          label="Settings" 
-          active={activeTab === 'settings'}
-          onClick={() => setActiveTab(activeTab === 'settings' ? null : 'settings')}
-        />
+        {/* Floating carrot particles */}
+        {[...Array(5)].map((_, i) => (
+          <div 
+            key={i}
+            className="absolute animate-float"
+            style={{
+              left: `${15 + i * 20}%`,
+              top: `${20 + (i % 2) * 15}%`,
+              animation: `float ${4 + i}s ease-in-out infinite`,
+              animationDelay: `${i * 0.5}s`
+            }}
+          >
+            <CarrotIcon className="w-6 h-8 opacity-20" />
+          </div>
+        ))}
       </div>
 
-      {/* Main content - Room */}
-      <div className="flex-1 flex flex-col relative">
-        {/* Top resource bars */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-4 z-10">
-          <ResourceBar 
-            icon={<Coins className="w-4 h-4" />} 
-            value={coins} 
-            max={1000} 
-            color="bg-[#E8A87C]"
-            label="Coins"
-          />
-          <ResourceBar 
-            icon={<Heart className="w-4 h-4" />} 
-            value={pet?.happiness || 80} 
-            max={100} 
-            color="bg-[#E8919C]"
-            label="Happiness"
-          />
-          <ResourceBar 
-            icon={<Sprout className="w-4 h-4" />} 
-            value={profile?.level || 1} 
-            max={50} 
-            color="bg-[#7EB8A2]"
-            label="Level"
-          />
-        </div>
-
-        {/* Room view */}
-        <div className="flex-1 flex items-center justify-center">
-          {renderRoom()}
-        </div>
-
-        {/* Bottom action button */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
-          <button className="group relative bg-[#E8A87C] hover:bg-[#D9976B] text-white px-12 py-5 rounded-3xl font-black text-xl shadow-2xl shadow-[#E8A87C]/30 hover:shadow-[#E8A87C]/50 transition-all duration-300 hover:scale-105 active:scale-95">
-            <span className="flex items-center gap-2">
-              <Sparkles className="w-6 h-6 animate-pulse" />
-              SAVE MONEY!
-              <Sparkles className="w-6 h-6 animate-pulse" />
-            </span>
-            {/* Decorative leaves - SVG instead of emoji */}
-            <span className="absolute -top-2 -left-3">
-              <svg width="24" height="24" viewBox="0 0 24 24" className="animate-bounce">
-                <path d="M12 2C7 8 7 14 12 22C17 14 17 8 12 2Z" fill="#7EB8A2"/>
-              </svg>
-            </span>
-            <span className="absolute -top-2 -right-3">
-              <svg width="24" height="24" viewBox="0 0 24 24" className="animate-bounce delay-100">
-                <path d="M12 2C7 8 7 14 12 22C17 14 17 8 12 2Z" fill="#6BA08A"/>
-              </svg>
-            </span>
+      {/* Top Bar - Room info and Carrots */}
+      <div className="relative z-20 flex items-center justify-between px-4 py-3">
+        {/* Room Navigation */}
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => {
+              const prevRoom = rooms[Math.max(0, rooms.findIndex(r => r.id === currentRoomId) - 1)];
+              if (prevRoom.id !== currentRoomId) handleRoomChange(prevRoom.id);
+            }}
+            className="p-2 bg-[#FDF8F3]/80 backdrop-blur rounded-full hover:bg-[#FDF8F3] transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 text-[#6B4423]" />
+          </button>
+          <div className="bg-[#FDF8F3]/80 backdrop-blur px-4 py-2 rounded-full border-2 border-[#C9B77D]">
+            <span className="font-bold text-[#6B4423]">{currentRoom.name}</span>
+          </div>
+          <button 
+            onClick={() => {
+              const nextRoom = rooms[Math.min(rooms.length - 1, rooms.findIndex(r => r.id === currentRoomId) + 1)];
+              if (nextRoom.id !== currentRoomId) handleRoomChange(nextRoom.id);
+            }}
+            className="p-2 bg-[#FDF8F3]/80 backdrop-blur rounded-full hover:bg-[#FDF8F3] transition-colors"
+          >
+            <ChevronRight className="w-5 h-5 text-[#6B4423]" />
           </button>
         </div>
+
+        {/* Carrot Currency */}
+        <div className="flex items-center gap-2 bg-[#FDF8F3]/90 backdrop-blur px-4 py-2 rounded-full border-2 border-[#FF8C42]">
+          <CarrotIcon className="w-5 h-7" />
+          <span className="font-black text-[#FF8C42] text-lg">{carrots}</span>
+        </div>
       </div>
 
-      {/* Right sidebar - Content panels */}
+      {/* Main Game Area */}
+      <div className="flex-1 relative flex items-center justify-center p-4">
+        {/* Room Container */}
+        <div className="relative w-full max-w-[500px] aspect-square">
+          {/* Floor */}
+          <div 
+            className="absolute inset-[5%] rounded-3xl shadow-2xl overflow-hidden"
+            style={{ backgroundColor: currentRoom.floorColor }}
+          >
+            {/* Floor pattern */}
+            <div className="absolute inset-0 opacity-30">
+              <div className="w-full h-full" style={{
+                backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(0,0,0,0.03) 20px, rgba(0,0,0,0.03) 40px)`
+              }} />
+            </div>
+
+            {/* Walls */}
+            <div 
+              className="absolute top-0 left-[10%] right-[10%] h-[30%] rounded-t-2xl"
+              style={{ backgroundColor: currentRoom.wallColor }}
+            >
+              {/* Baseboard */}
+              <div className="absolute bottom-0 left-0 right-0 h-2 bg-[#A67B5B]" />
+            </div>
+
+            {/* Door(s) */}
+            {currentRoom.doors.map((door, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleRoomChange(door.targetRoomId)}
+                className="absolute transition-transform hover:scale-105 active:scale-95"
+                style={{
+                  ...(door.position === 'right' && { right: '2%', top: '40%', width: '12%', height: '20%' }),
+                  ...(door.position === 'left' && { left: '2%', top: '40%', width: '12%', height: '20%' }),
+                }}
+              >
+                <div className="w-full h-full relative">
+                  <FurnitureItem type="door" className="w-full h-full" />
+                  {/* Door indicator */}
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#FF8C42] text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+                    GO
+                  </div>
+                </div>
+              </button>
+            ))}
+
+            {/* Window */}
+            <div className="absolute top-[5%] left-1/2 -translate-x-1/2 w-[30%] h-[20%]">
+              <FurnitureItem type="window-sunny" className="w-full h-full" />
+            </div>
+
+            {/* Placed Items */}
+            {currentRoom.items.map((item) => (
+              <div
+                key={item.uniqueId}
+                className={`absolute transition-all duration-200 ${
+                  selectedItem?.uniqueId === item.uniqueId 
+                    ? 'ring-4 ring-[#FF8C42] ring-opacity-50 scale-110 z-10' 
+                    : 'hover:scale-105'
+                }`}
+                style={{
+                  left: `${item.x}%`,
+                  top: `${item.y}%`,
+                  transform: `translate(-50%, -50%) rotate(${item.rotation || 0}deg)`,
+                  width: '20%',
+                  height: '20%'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (activeTab === 'decorate') {
+                    setSelectedItem(item);
+                  }
+                }}
+              >
+                <FurnitureItem type={item.type} className="w-full h-full drop-shadow-lg" />
+              </div>
+            ))}
+
+            {/* Inventory items being placed */}
+            {inventory.map((item) => (
+              <button
+                key={item.uniqueId}
+                className="absolute w-[20%] h-[20%] transition-all hover:scale-110 animate-pulse"
+                style={{
+                  left: `${40 + Math.random() * 20}%`,
+                  top: `${40 + Math.random() * 15}%`,
+                  transform: 'translate(-50%, -50%)'
+                }}
+                onClick={() => handlePlaceItem({ ...item, x: 50, y: 50 })}
+              >
+                <FurnitureItem type={item.type} className="w-full h-full opacity-70" />
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#FF8C42] rounded-full flex items-center justify-center">
+                  <Plus className="w-4 h-4 text-white" />
+                </div>
+              </button>
+            ))}
+
+            {/* Dog Character */}
+            <div
+              className="absolute transition-all duration-1000 ease-in-out"
+              style={{
+                left: `${dogPosition.x}%`,
+                top: `${dogPosition.y}%`,
+                transform: 'translate(-50%, -50%)'
+              }}
+            >
+              <DogCharacter isMoving={isMovingPotato} />
+            </div>
+
+            {/* Potato Character (Player) */}
+            <div
+              className="absolute transition-all duration-500 ease-out z-10"
+              style={{
+                left: `${potatoPosition.x}%`,
+                top: `${potatoPosition.y}%`,
+                transform: 'translate(-50%, -50%)'
+              }}
+            >
+              <PotatoCharacter 
+                isMoving={isMovingPotato} 
+                isHappy={activeTab === 'shop'}
+                outfit={outfit}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel - Active Tab Content */}
       {activeTab && (
-        <div className="w-80 bg-[#FDF8F3]/95 backdrop-blur-xl border-l-2 border-[#C9B8A4] overflow-y-auto z-20">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-black text-[#2D5A4A]">
-                {activeTab === 'shop' && 'Shop'}
-                {activeTab === 'closet' && 'Closet'}
-                {activeTab === 'bank' && 'Bank'}
-                {activeTab === 'settings' && 'Settings'}
+        <div className="absolute top-[80px] right-4 w-72 bg-[#FDF8F3]/95 backdrop-blur-xl rounded-3xl border-2 border-[#C9B77D] shadow-2xl z-30 max-h-[60vh] overflow-y-auto">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-black text-[#6B4423]">
+                {activeTab === 'shop' && '🥕 Shop'}
+                {activeTab === 'decorate' && '🎨 Decorate'}
+                {activeTab === 'settings' && '⚙️ Settings'}
               </h2>
               <button 
-                onClick={() => setActiveTab(null)}
+                onClick={() => { setActiveTab(null); setSelectedItem(null); }}
                 className="p-2 hover:bg-[#F5EDE4] rounded-xl transition-colors"
               >
                 <X className="w-5 h-5 text-[#6B4423]" />
               </button>
             </div>
-            
-            {activeTab === 'shop' && <ShopPanel coins={coins} onBuy={handleBuyItem} isAdmin={isAdmin} />}
-            {activeTab === 'closet' && <ClosetPanel onSelect={(item) => console.log('Selected:', item)} />}
-            {activeTab === 'bank' && <BankPanel bankAccounts={bankAccounts} onConnect={() => setShowBankModal(true)} />}
-            {activeTab === 'settings' && <SettingsPanel onSignOut={handleSignOut} user={user} isAdmin={isAdmin} />}
+
+            {activeTab === 'shop' && (
+              <ShopPanel carrots={carrots} onBuy={handleBuyItem} isAdmin={isAdmin} />
+            )}
+
+            {activeTab === 'decorate' && (
+              <DecoratePanel 
+                inventory={inventory}
+                selectedItem={selectedItem}
+                onPlace={handlePlaceItem}
+                onMove={handleMoveItem}
+                onDelete={handleDeleteItem}
+                onColorChange={handleColorChange}
+                currentFloorColor={currentRoom.floorColor}
+                currentWallColor={currentRoom.wallColor}
+              />
+            )}
+
+            {activeTab === 'settings' && (
+              <SettingsPanel 
+                onSignOut={handleSignOut} 
+                user={user} 
+                isAdmin={isAdmin}
+                outfit={outfit}
+                onOutfitChange={setOutfit}
+              />
+            )}
           </div>
         </div>
       )}
-    </div>
-  );
 
-  // Mobile layout with bottom controls
-  const MobileLayout = () => (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-[#F5EDE4] to-[#E6D5C3] overflow-hidden">
-      {/* Top resource bars */}
-      <div className="flex justify-center gap-3 p-4 pt-12 bg-[#FDF8F3]/50 backdrop-blur-sm border-b border-[#C9B8A4]">
-        <ResourceBar 
-          icon={<Coins className="w-3 h-3" />} 
-          value={coins} 
-          max={1000} 
-          color="bg-[#E8A87C]"
-          label="Coins"
-          compact
-        />
-        <ResourceBar 
-          icon={<Heart className="w-3 h-3" />} 
-          value={pet?.happiness || 80} 
-          max={100} 
-          color="bg-[#E8919C]"
-          label="Happiness"
-          compact
-        />
-        <ResourceBar 
-          icon={<Sprout className="w-3 h-3" />} 
-          value={profile?.level || 1} 
-          max={50} 
-          color="bg-[#7EB8A2]"
-          label="Level"
-          compact
-        />
-      </div>
-
-      {/* Room view */}
-      <div className="flex-1 relative">
-        {renderRoom()}
-        
-        {/* Floating action button */}
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10">
-          <button className="group bg-[#E8A87C] hover:bg-[#D9976B] text-white px-8 py-4 rounded-2xl font-black text-lg shadow-xl shadow-[#E8A87C]/30 transition-all duration-300 hover:scale-105 active:scale-95">
-            <span className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5" />
-              SAVE!
-            </span>
-          </button>
+      {/* Bottom Toolbar - Custom Potato Buttons */}
+      <div className="relative z-20 pb-6 pt-2">
+        <div className="flex items-center justify-center gap-6">
+          {/* Decorate Button */}
+          <ToolbarButton
+            icon={<Palette className="w-7 h-7" />}
+            label="Decorate"
+            active={activeTab === 'decorate'}
+            onClick={() => setActiveTab(activeTab === 'decorate' ? null : 'decorate')}
+            badge={inventory.length}
+          />
+          
+          {/* Shop Button */}
+          <ToolbarButton
+            icon={<CarrotIcon className="w-8 h-10" />}
+            label="Shop"
+            active={activeTab === 'shop'}
+            onClick={() => setActiveTab(activeTab === 'shop' ? null : 'shop')}
+          />
+          
+          {/* Settings Button */}
+          <ToolbarButton
+            icon={<Settings className="w-7 h-7" />}
+            label="Settings"
+            active={activeTab === 'settings'}
+            onClick={() => setActiveTab(activeTab === 'settings' ? null : 'settings')}
+          />
         </div>
       </div>
-
-      {/* Bottom navigation */}
-      <div className="bg-white/90 backdrop-blur-xl border-t-2 border-[#B8D4E3] px-6 py-4 flex justify-around items-center">
-        <NavButton 
-          icon={<Sofa className="w-6 h-6" />} 
-          label="Shop" 
-          active={activeTab === 'shop'}
-          onClick={() => setActiveTab(activeTab === 'shop' ? null : 'shop')}
-          mobile
-        />
-        <NavButton 
-          icon={<Shirt className="w-6 h-6" />} 
-          label="Closet" 
-          active={activeTab === 'closet'}
-          onClick={() => setActiveTab(activeTab === 'closet' ? null : 'closet')}
-          mobile
-        />
-        <NavButton 
-          icon={<Wallet className="w-6 h-6" />} 
-          label="Bank" 
-          active={activeTab === 'bank'}
-          onClick={() => setActiveTab(activeTab === 'bank' ? null : 'bank')}
-          mobile
-        />
-        <NavButton 
-          icon={<Settings className="w-6 h-6" />} 
-          label="Settings" 
-          active={activeTab === 'settings'}
-          onClick={() => setActiveTab(activeTab === 'settings' ? null : 'settings')}
-          mobile
-        />
-      </div>
-
-      {/* Mobile modal for tabs */}
-      {activeTab && (
-        <div className="absolute inset-0 bg-black/30 z-50 flex items-end">
-          <div className="w-full bg-[#FDF8F3] rounded-t-3xl p-6 max-h-[70vh] overflow-y-auto animate-slide-up">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black text-[#2D5A4A]">
-                {activeTab === 'shop' && 'Shop'}
-                {activeTab === 'closet' && 'Closet'}
-                {activeTab === 'bank' && 'Bank'}
-                {activeTab === 'settings' && 'Settings'}
-              </h2>
-              <button 
-                onClick={() => setActiveTab(null)}
-                className="p-2 hover:bg-[#F5EDE4] rounded-xl"
-              >
-                <X className="w-5 h-5 text-[#6B4423]" />
-              </button>
-            </div>
-            
-            {activeTab === 'shop' && <ShopPanel coins={coins} onBuy={handleBuyItem} isAdmin={isAdmin} mobile />}
-            {activeTab === 'closet' && <ClosetPanel onSelect={(item) => console.log('Selected:', item)} mobile />}
-            {activeTab === 'bank' && <BankPanel bankAccounts={bankAccounts} onConnect={() => setShowBankModal(true)} mobile />}
-            {activeTab === 'settings' && <SettingsPanel onSignOut={handleSignOut} user={user} isAdmin={isAdmin} mobile />}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <>
-      {isMobile ? <MobileLayout /> : <DesktopLayout />}
-      
-      {/* Bank Connection Modal */}
-      {showBankModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-            <div className="flex justify-center mb-4">
-              <svg width="64" height="64" viewBox="0 0 64 64" className="text-[#7EB8A2]">
-                <rect x="8" y="20" width="48" height="36" rx="4" fill="#7EB8A2" opacity="0.2"/>
-                <rect x="12" y="24" width="40" height="28" rx="2" fill="none" stroke="#7EB8A2" strokeWidth="2"/>
-                <path d="M12 32 L52 32" stroke="#7EB8A2" strokeWidth="2"/>
-                <circle cx="20" cy="40" r="3" fill="#7EB8A2"/>
-                <path d="M32 8 L32 20" stroke="#7EB8A2" strokeWidth="3" strokeLinecap="round"/>
-                <circle cx="32" cy="8" r="4" fill="#E8A87C"/>
-              </svg>
-            </div>
-            <h2 className="text-2xl font-black text-[#2D5A4A] mb-4 text-center">Connect Your Bank</h2>
-            <p className="text-[#5A8A7A] mb-6 text-center">
-              Link your bank account to start earning coins for saving money!
-            </p>
-            <div className="flex justify-center">
-              <PlaidLinkButton />
-            </div>
-            <button 
-              onClick={() => setShowBankModal(false)}
-              className="mt-4 w-full text-[#8AB3A8] hover:text-[#5A8A7A] font-medium"
-            >
-              Skip for now
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-// Sub-components
-function NavButton({ icon, label, active, onClick, mobile = false }: { 
-  icon: React.ReactNode; 
-  label: string; 
-  active: boolean; 
-  onClick: () => void;
-  mobile?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center gap-1 p-3 rounded-2xl transition-all duration-200 ${
-        active 
-          ? 'bg-[#A67B5B]/20 text-[#6B4423]' 
-          : 'text-[#8B7355] hover:bg-[#F5EDE4] hover:text-[#6B4423]'
-      }`}
-    >
-      {icon}
-      <span className={`font-bold ${mobile ? 'text-[10px]' : 'text-xs'}`}>{label}</span>
-    </button>
-  );
-}
-
-function ResourceBar({ icon, value, max, color, label, compact = false }: { 
-  icon: React.ReactNode; 
-  value: number; 
-  max: number; 
-  color: string;
-  label: string;
-  compact?: boolean;
-}) {
-  return (
-    <div className={`bg-white/90 backdrop-blur rounded-full border-2 border-[#B8D4E3] flex items-center gap-2 ${compact ? 'px-3 py-1.5' : 'px-4 py-2'} shadow-sm`}>
-      <div className={`${color} text-white rounded-full p-1`}>
-        {icon}
-      </div>
-      <div>
-        <span className={`font-black text-[#2D5A4A] ${compact ? 'text-sm' : 'text-base'}`}>{value}</span>
-        {!compact && <span className="text-xs text-[#8AB3A8] ml-1">{label}</span>}
-      </div>
     </div>
   );
 }
 
-function RoomItem({ item }: { item: PlacedItem }) {
-  return (
-    <div
-      className="absolute transition-all duration-300 hover:scale-110 cursor-pointer"
-      style={{
-        left: `${item.x * 50}px`,
-        top: `${item.y * 50}px`,
-        transform: `rotateZ(-45deg) rotateX(-55deg) translateZ(10px)`,
-        zIndex: 10,
-      }}
-    >
-      <FurnitureItem type={item.type} />
-    </div>
-  );
-}
-
-function PetAvatar({ stage, name }: { stage: string; name: string }) {
-  return (
-    <div className="relative group">
-      <div className="animate-bounce">
-        <PetCharacter stage={stage} isMoving />
-      </div>
-      {/* Speech bubble on hover */}
-      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white px-3 py-1.5 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-        <span className="text-sm font-bold text-[#2D5A4A]">Hi! I&apos;m {name}</span>
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45" />
-      </div>
-    </div>
-  );
-}
-
+// ========== SHOP PANEL ==========
 function ShopPanel({ 
-  coins, 
+  carrots, 
   onBuy, 
-  isAdmin = false,
-  mobile = false 
+  isAdmin 
 }: { 
-  coins: number; 
-  onBuy: (itemType: string, category: 'furniture' | 'plant' | 'decor', price: number) => void;
-  isAdmin?: boolean;
-  mobile?: boolean;
+  carrots: number; 
+  onBuy: (id: string, category: string, price: number) => void;
+  isAdmin: boolean;
 }) {
-  const allItems = [
-    ...FURNITURE_ITEMS,
-    ...PLANT_ITEMS,
-    ...DECOR_ITEMS,
-  ];
+  const [category, setCategory] = useState<'all' | 'furniture' | 'plants' | 'decor'>('all');
+  
+  const items = category === 'all' 
+    ? [...FURNITURE_ITEMS, ...PLANT_ITEMS, ...DECOR_ITEMS]
+    : category === 'furniture' 
+      ? FURNITURE_ITEMS
+      : category === 'plants'
+        ? PLANT_ITEMS
+        : DECOR_ITEMS;
 
-  return (
-    <div className={`grid ${mobile ? 'grid-cols-2' : 'grid-cols-2'} gap-3 max-h-[60vh] overflow-y-auto`}>
-      {allItems.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => onBuy(item.id, item.category, item.price)}
-          disabled={!isAdmin && coins < item.price}
-          className="bg-[#FDF8F3] hover:bg-white border-2 border-[#C9B8A4] hover:border-[#A67B5B] rounded-2xl p-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
-        >
-          <div className="flex justify-center mb-2">
-            <FurnitureItem type={item.id} className="group-hover:scale-110 transition-transform" />
-          </div>
-          <div className="font-bold text-[#2D5A4A] text-sm">{item.name}</div>
-          <div className="flex items-center justify-center gap-1 mt-1">
-            <Coins className="w-3 h-3 text-[#E8A87C]" />
-            <span className="text-sm font-black text-[#E8A87C]">{isAdmin ? 'FREE' : item.price}</span>
-          </div>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ClosetPanel({ 
-  onSelect, 
-  mobile = false 
-}: { 
-  onSelect?: (item: { id: string; name: string }) => void;
-  mobile?: boolean;
-}) {
-  const outfits: { id: string; name: string; price: number; category: string }[] = CLOTHING_ITEMS;
-
-  return (
-    <div className={`grid ${mobile ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
-      {outfits.map((outfit) => (
-        <button
-          key={outfit.id}
-          onClick={() => onSelect?.(outfit)}
-          className="bg-[#FDF8F3] hover:bg-white border-2 border-[#C9B8A4] hover:border-[#E8919C] rounded-2xl p-4 transition-all"
-        >
-          <div className="flex justify-center mb-2">
-            <FurnitureItem type={outfit.id} />
-          </div>
-          <div className="font-bold text-[#2D5A4A] text-sm text-center">{outfit.name}</div>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function BankPanel({ 
-  bankAccounts, 
-  onConnect,
-  mobile = false 
-}: { 
-  bankAccounts: any[]; 
-  onConnect?: () => void;
-  mobile?: boolean;
-}) {
   return (
     <div className="space-y-4">
-      {bankAccounts.length > 0 ? (
-        bankAccounts.map((account) => (
-          <div key={account.id} className="bg-[#FDF8F3] rounded-2xl p-4 border-2 border-[#C9B8A4]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#A67B5B]/20 rounded-xl flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-[#A67B5B]" />
-              </div>
-              <div>
-                <div className="font-bold text-[#2D5A4A]">{account.institution_name}</div>
-                <div className="text-xs text-[#8AB3A8] capitalize">{account.status}</div>
-              </div>
+      {/* Category tabs */}
+      <div className="flex gap-1 overflow-x-auto pb-2">
+        {(['all', 'furniture', 'plants', 'decor'] as const).map(cat => (
+          <button
+            key={cat}
+            onClick={() => setCategory(cat)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+              category === cat 
+                ? 'bg-[#FF8C42] text-white' 
+                : 'bg-[#F5EDE4] text-[#8B7355] hover:bg-[#E6D5C3]'
+            }`}
+          >
+            {cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Items grid */}
+      <div className="grid grid-cols-2 gap-2">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => onBuy(item.id, item.category, item.price)}
+            disabled={!isAdmin && carrots < item.price}
+            className="bg-white hover:bg-[#FFF8F3] border-2 border-[#E6D5C3] hover:border-[#FF8C42] rounded-2xl p-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+          >
+            <div className="flex justify-center mb-2 h-12">
+              <FurnitureItem type={item.id} className="group-hover:scale-110 transition-transform max-h-full" />
+            </div>
+            <div className="font-bold text-[#6B4423] text-xs text-center leading-tight">{item.name}</div>
+            <div className="flex items-center justify-center gap-1 mt-1">
+              <CarrotIcon className="w-3 h-4" />
+              <span className={`text-sm font-black ${isAdmin || carrots >= item.price ? 'text-[#FF8C42]' : 'text-red-400'}`}>
+                {isAdmin ? 'FREE' : item.price}
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ========== DECORATE PANEL ==========
+function DecoratePanel({
+  inventory,
+  selectedItem,
+  onPlace,
+  onMove,
+  onDelete,
+  onColorChange,
+  currentFloorColor,
+  currentWallColor
+}: {
+  inventory: PlacedItem[];
+  selectedItem: PlacedItem | null;
+  onPlace: (item: PlacedItem) => void;
+  onMove: (id: string, x: number, y: number) => void;
+  onDelete: (id: string) => void;
+  onColorChange: (type: 'floor' | 'wall', color: string) => void;
+  currentFloorColor: string;
+  currentWallColor: string;
+}) {
+  const [activeSection, setActiveSection] = useState<'inventory' | 'colors' | 'move'>('inventory');
+
+  return (
+    <div className="space-y-4">
+      {/* Section tabs */}
+      <div className="flex gap-1">
+        {(['inventory', 'colors', 'move'] as const).map(section => (
+          <button
+            key={section}
+            onClick={() => setActiveSection(section)}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
+              activeSection === section 
+                ? 'bg-[#A67B5B] text-white' 
+                : 'bg-[#F5EDE4] text-[#8B7355] hover:bg-[#E6D5C3]'
+            }`}
+          >
+            {section === 'inventory' && 'Items'}
+            {section === 'colors' && 'Colors'}
+            {section === 'move' && 'Move'}
+          </button>
+        ))}
+      </div>
+
+      {activeSection === 'inventory' && (
+        <div>
+          <h3 className="font-bold text-[#6B4423] mb-2 text-sm">Unplaced Items ({inventory.length})</h3>
+          {inventory.length === 0 ? (
+            <p className="text-xs text-[#8B7355] text-center py-4">Your inventory is empty! Buy items from the shop.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {inventory.map((item) => (
+                <button
+                  key={item.uniqueId}
+                  onClick={() => onPlace(item)}
+                  className="bg-white border-2 border-[#E6D5C3] hover:border-[#FF8C42] rounded-xl p-2 transition-all"
+                >
+                  <FurnitureItem type={item.type} className="w-full h-10" />
+                  <Plus className="w-4 h-4 mx-auto mt-1 text-[#FF8C42]" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeSection === 'colors' && (
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-bold text-[#6B4423] mb-2 text-sm">Floor Color</h3>
+            <div className="flex gap-2 flex-wrap">
+              {FLOOR_COLORS.map(color => (
+                <button
+                  key={color.id}
+                  onClick={() => onColorChange('floor', color.color)}
+                  className={`w-10 h-10 rounded-xl border-2 transition-all ${
+                    currentFloorColor === color.color 
+                      ? 'border-[#6B4423] scale-110' 
+                      : 'border-[#E6D5C3] hover:border-[#A67B5B]'
+                  }`}
+                  style={{ backgroundColor: color.color }}
+                  title={color.name}
+                />
+              ))}
             </div>
           </div>
-        ))
-      ) : (
-        <div className="text-center py-8">
-          <div className="flex justify-center mb-4">
-            <svg width="48" height="48" viewBox="0 0 64 64" className="text-[#7EB8A2]">
-              <rect x="8" y="20" width="48" height="36" rx="4" fill="#7EB8A2" opacity="0.2"/>
-              <rect x="12" y="24" width="40" height="28" rx="2" fill="none" stroke="#7EB8A2" strokeWidth="2"/>
-              <path d="M12 32 L52 32" stroke="#7EB8A2" strokeWidth="2"/>
-              <circle cx="20" cy="40" r="3" fill="#7EB8A2"/>
-            </svg>
+          <div>
+            <h3 className="font-bold text-[#6B4423] mb-2 text-sm">Wall Color</h3>
+            <div className="flex gap-2 flex-wrap">
+              {WALL_COLORS.map(color => (
+                <button
+                  key={color.id}
+                  onClick={() => onColorChange('wall', color.color)}
+                  className={`w-10 h-10 rounded-xl border-2 transition-all ${
+                    currentWallColor === color.color 
+                      ? 'border-[#6B4423] scale-110' 
+                      : 'border-[#E6D5C3] hover:border-[#A67B5B]'
+                  }`}
+                  style={{ backgroundColor: color.color }}
+                  title={color.name}
+                />
+              ))}
+            </div>
           </div>
-          <p className="text-[#5A8A7A] mb-4">No bank connected yet</p>
-          {onConnect ? (
-            <button 
-              onClick={onConnect}
-              className="bg-[#A67B5B] hover:bg-[#8B7355] text-white font-bold py-2 px-6 rounded-xl transition-all"
-            >
-              Connect Bank
-            </button>
+        </div>
+      )}
+
+      {activeSection === 'move' && (
+        <div>
+          {selectedItem ? (
+            <div className="space-y-3">
+              <p className="text-sm text-[#6B4423]">Moving: <span className="font-bold">{selectedItem.type}</span></p>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => onMove(selectedItem.uniqueId, selectedItem.x, selectedItem.y - 5)}
+                  className="p-3 bg-[#F5EDE4] hover:bg-[#E6D5C3] rounded-xl text-2xl"
+                >
+                  ↑
+                </button>
+                <button
+                  onClick={() => onMove(selectedItem.uniqueId, selectedItem.x, selectedItem.y + 5)}
+                  className="p-3 bg-[#F5EDE4] hover:bg-[#E6D5C3] rounded-xl text-2xl"
+                >
+                  ↓
+                </button>
+                <button
+                  onClick={() => onMove(selectedItem.uniqueId, selectedItem.x - 5, selectedItem.y)}
+                  className="p-3 bg-[#F5EDE4] hover:bg-[#E6D5C3] rounded-xl text-2xl"
+                >
+                  ←
+                </button>
+                <button
+                  onClick={() => onMove(selectedItem.uniqueId, selectedItem.x + 5, selectedItem.y)}
+                  className="p-3 bg-[#F5EDE4] hover:bg-[#E6D5C3] rounded-xl text-2xl"
+                >
+                  →
+                </button>
+                <button
+                  onClick={() => onDelete(selectedItem.uniqueId)}
+                  className="col-span-2 p-3 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="text-sm font-bold">Remove</span>
+                </button>
+              </div>
+            </div>
           ) : (
-            <PlaidLinkButton />
+            <p className="text-xs text-[#8B7355] text-center py-4">
+              Tap an item in the room to select it for moving
+            </p>
           )}
         </div>
       )}
@@ -712,36 +776,106 @@ function BankPanel({
   );
 }
 
+// ========== SETTINGS PANEL ==========
 function SettingsPanel({ 
   onSignOut, 
   user, 
-  isAdmin = false,
-  mobile = false 
+  isAdmin,
+  outfit,
+  onOutfitChange
 }: { 
   onSignOut: () => void | Promise<void>; 
   user: any; 
-  isAdmin?: boolean;
-  mobile?: boolean;
+  isAdmin: boolean;
+  outfit: string[];
+  onOutfitChange: (outfit: string[]) => void;
 }) {
+  const [activeSection, setActiveSection] = useState<'account' | 'outfit'>('account');
+
+  const toggleOutfit = (item: string) => {
+    if (outfit.includes(item)) {
+      onOutfitChange(outfit.filter(i => i !== item));
+    } else {
+      onOutfitChange([...outfit, item]);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="bg-[#FDF8F3] rounded-2xl p-4 border-2 border-[#C9B8A4]">
-        <div className="font-bold text-[#6B4423] mb-1">Email</div>
-        <div className="text-[#8B7355] text-sm">{user.email}</div>
-        {isAdmin && (
-          <div className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-[#E8A87C]/20 text-[#E8A87C] rounded-full text-xs font-bold">
-            <Sparkles className="w-3 h-3" />
-            Admin - Infinite Coins
-          </div>
-        )}
+      <div className="flex gap-1">
+        <button
+          onClick={() => setActiveSection('account')}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
+            activeSection === 'account' 
+              ? 'bg-[#A67B5B] text-white' 
+              : 'bg-[#F5EDE4] text-[#8B7355] hover:bg-[#E6D5C3]'
+          }`}
+        >
+          Account
+        </button>
+        <button
+          onClick={() => setActiveSection('outfit')}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
+            activeSection === 'outfit' 
+              ? 'bg-[#A67B5B] text-white' 
+              : 'bg-[#F5EDE4] text-[#8B7355] hover:bg-[#E6D5C3]'
+          }`}
+        >
+          Potato
+        </button>
       </div>
-      
-      <button
-        onClick={onSignOut}
-        className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-xl border-2 border-red-200 transition-all"
-      >
-        Sign Out
-      </button>
+
+      {activeSection === 'account' && (
+        <div className="space-y-3">
+          <div className="bg-[#FDF8F3] rounded-2xl p-3 border-2 border-[#E6D5C3]">
+            <div className="text-xs text-[#8B7355] mb-1">Email</div>
+            <div className="font-bold text-[#6B4423] text-sm">{user?.email}</div>
+            {isAdmin && (
+              <div className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-[#FF8C42]/20 text-[#FF8C42] rounded-full text-xs font-bold">
+                <Sparkles className="w-3 h-3" />
+                Admin - Infinite Carrots
+              </div>
+            )}
+          </div>
+          
+          <button
+            onClick={onSignOut}
+            className="w-full bg-[#A67B5B] hover:bg-[#8B7355] text-white font-bold py-3 rounded-xl transition-all"
+          >
+            Sign Out
+          </button>
+        </div>
+      )}
+
+      {activeSection === 'outfit' && (
+        <div className="space-y-3">
+          <p className="text-xs text-[#8B7355] text-center">Customize your potato!</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => toggleOutfit('hat')}
+              className={`p-3 rounded-xl border-2 transition-all ${
+                outfit.includes('hat')
+                  ? 'bg-[#FF8C42] text-white border-[#FF8C42]'
+                  : 'bg-white border-[#E6D5C3] hover:border-[#FF8C42]'
+              }`}
+            >
+              <div className="text-2xl mb-1">🥕</div>
+              <div className="text-xs font-bold">Carrot Hat</div>
+            </button>
+            <button
+              onClick={() => toggleOutfit('glasses')}
+              className={`p-3 rounded-xl border-2 transition-all ${
+                outfit.includes('glasses')
+                  ? 'bg-[#FF8C42] text-white border-[#FF8C42]'
+                  : 'bg-white border-[#E6D5C3] hover:border-[#FF8C42]'
+              }`}
+            >
+              <div className="text-2xl mb-1">👓</div>
+              <div className="text-xs font-bold">Glasses</div>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
