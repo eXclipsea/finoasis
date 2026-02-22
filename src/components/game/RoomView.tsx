@@ -79,28 +79,19 @@ const PLANTING_SLOTS: PlantingSlot[] = [
   { index: 8, x: 75, y: 75, occupied: false },
 ];
 
-// Hand-drawn tree using bezier curves - round and bumpy
-const HandDrawnTreeSVG = ({ type, stage, health }: { type: TreeType; stage: TreeStage; health: number }) => {
+// Simple Forest-style tree - basic geometric shapes
+const SimpleTree = ({ type, stage, health }: { type: TreeType; stage: TreeStage; health: number }) => {
   const isDead = health <= 0;
   const config = TREE_CONFIG[type];
-  
-  // Size increases with stage
   const stageIndex = STAGE_ORDER.indexOf(stage);
-  const baseScale = 0.5 + (stageIndex * 0.08);
+  const scale = 0.4 + (stageIndex * 0.1);
   
   if (isDead) {
     return (
-      <svg viewBox="0 0 100 120" className="w-full h-full" style={{ transform: `scale(${baseScale})` }}>
-        {/* Dead trunk - crooked and dry */}
-        <path 
-          d="M48 110 Q46 80 48 60 Q50 50 47 40" 
-          stroke="#5D4037" 
-          strokeWidth="6" 
-          fill="none" 
-          strokeLinecap="round"
-        />
-        <path d="M47 70 L32 55 M48 55 L63 48" stroke="#5D4037" strokeWidth="3" fill="none" strokeLinecap="round" />
-        <text x="50" y="30" textAnchor="middle" fontSize="20">🍂</text>
+      <svg viewBox="0 0 100 100" className="w-full h-full">
+        <path d="M50 85 L48 50" stroke="#5D4037" strokeWidth="4" strokeLinecap="round" />
+        <path d="M48 65 L35 55 M48 55 L60 48" stroke="#5D4037" strokeWidth="2" strokeLinecap="round" />
+        <text x="50" y="35" textAnchor="middle" fontSize="20">🍂</text>
       </svg>
     );
   }
@@ -108,11 +99,9 @@ const HandDrawnTreeSVG = ({ type, stage, health }: { type: TreeType; stage: Tree
   // Seed stage
   if (stage === 'seed') {
     return (
-      <svg viewBox="0 0 100 120" className="w-full h-full">
-        {/* Brown patch with seed */}
-        <ellipse cx="50" cy="105" rx="18" ry="8" fill="#6D4C41" opacity="0.4" />
-        <ellipse cx="50" cy="102" rx="6" ry="4" fill="#4E342E" />
-        <ellipse cx="50" cy="100" rx="3" ry="2" fill="#3E2723" />
+      <svg viewBox="0 0 100 100" className="w-full h-full">
+        <ellipse cx="50" cy="85" rx="15" ry="6" fill="#6D4C41" opacity="0.4" />
+        <circle cx="50" cy="83" r="5" fill="#4E342E" />
       </svg>
     );
   }
@@ -120,92 +109,66 @@ const HandDrawnTreeSVG = ({ type, stage, health }: { type: TreeType; stage: Tree
   // Sprout
   if (stage === 'sprout') {
     return (
-      <svg viewBox="0 0 100 120" className="w-full h-full" style={{ transform: `scale(${baseScale})` }}>
-        {/* Brown patch */}
-        <ellipse cx="50" cy="105" rx="20" ry="10" fill="#6D4C41" opacity="0.3" />
-        {/* Wobbly stem */}
-        <path d="M50 105 Q52 90 48 80 Q50 75 50 70" stroke="#6D4C41" strokeWidth="3" fill="none" strokeLinecap="round" />
-        {/* Two leaves - organic shapes with bezier */}
-        <path d="M50 80 Q35 72 38 62 Q45 68 50 80" fill={config.leafColor} stroke="#33691E" strokeWidth="1" />
-        <path d="M50 85 Q65 77 62 67 Q55 73 50 85" fill={config.leafColor} stroke="#33691E" strokeWidth="1" />
+      <svg viewBox="0 0 100 100" className="w-full h-full" style={{ transform: `scale(${scale})` }}>
+        <line x1="50" y1="85" x2="50" y2="65" stroke={config.trunkColor} strokeWidth="3" strokeLinecap="round" />
+        <circle cx="40" cy="70" r="6" fill={config.leafColor} />
+        <circle cx="60" cy="68" r="6" fill={config.leafColor} />
       </svg>
     );
   }
   
-  // All larger stages use bezier curves for round bumpy foliage
+  // All larger stages use simple circles
   return (
-    <svg viewBox="0 0 100 120" className="w-full h-full" style={{ transform: `scale(${baseScale})` }}>
-      {/* Brown patch at base */}
-      <ellipse cx="50" cy="108" rx="25" ry="12" fill="#6D4C41" opacity="0.35" />
+    <svg viewBox="0 0 100 100" className="w-full h-full" style={{ transform: `scale(${scale})` }}>
+      {/* Trunk */}
+      <line x1="50" y1="85" x2="50" y2="45" stroke={config.trunkColor} strokeWidth="5" strokeLinecap="round" />
       
-      {/* Trunk - wobbly organic shape */}
-      <path 
-        d={type === 'pine' 
-          ? "M50 108 L48 50 L52 50 Z" 
-          : type === 'willow'
-          ? "M48 108 Q52 80 50 50 Q48 45 52 45"
-          : "M45 108 Q48 75 46 45 Q50 40 54 45 Q52 75 55 108"
-        }
-        fill={config.trunkColor}
-        stroke="#3E2723"
-        strokeWidth="2"
-      />
-      
-      {/* Foliage - round bumpy shapes using bezier curves */}
+      {/* Simple round foliage - just circles */}
       {type === 'pine' ? (
-        // Pine layers - triangular but organic
+        // Pine - triangle of circles
         <>
-          <path d="M50 20 L25 45 Q50 50 75 45 Z" fill={config.leafColor} stroke="#1B5E20" strokeWidth="1.5" />
-          <path d="M50 40 L28 65 Q50 72 72 65 Z" fill={config.leafColor} stroke="#1B5E20" strokeWidth="1.5" />
-          <path d="M50 60 L30 85 Q50 92 70 85 Z" fill={config.leafColor} stroke="#1B5E20" strokeWidth="1.5" />
+          <circle cx="50" cy="35" r="15" fill={config.leafColor} />
+          <circle cx="50" cy="50" r="18" fill={config.leafColor} />
+          {stageIndex >= 4 && <circle cx="50" cy="25" r="10" fill={config.leafColor} />}
         </>
       ) : type === 'willow' ? (
-        // Willow - drooping rounded masses
+        // Willow - drooping circles
         <>
-          <path d="M50 45 Q25 35 30 55 Q40 60 50 45" fill={config.leafColor} stroke="#558B2F" strokeWidth="1" />
-          <path d="M50 45 Q75 35 70 55 Q60 60 50 45" fill={config.leafColor} stroke="#558B2F" strokeWidth="1" />
-          {/* Drooping branches */}
-          <path d="M35 55 Q32 75 30 90 Q28 100 35 95" fill={config.leafColor} stroke="#558B2F" strokeWidth="1" />
-          <path d="M65 55 Q68 75 70 88 Q72 98 65 93" fill={config.leafColor} stroke="#558B2F" strokeWidth="1" />
-          <path d="M50 55 Q48 80 50 95 Q52 105 50 98" fill={config.leafColor} stroke="#558B2F" strokeWidth="1" />
+          <circle cx="50" cy="40" r="18" fill={config.leafColor} />
+          <circle cx="35" cy="55" r="10" fill={config.leafColor} />
+          <circle cx="65" cy="55" r="10" fill={config.leafColor} />
+          {stageIndex >= 5 && (
+            <>
+              <circle cx="25" cy="70" r="8" fill={config.leafColor} />
+              <circle cx="75" cy="70" r="8" fill={config.leafColor} />
+            </>
+          )}
         </>
       ) : (
-        // Oak, Cherry, Maple - round bumpy tree top
+        // Oak, Cherry, Maple - classic round tree
         <>
-          {/* Main foliage mass - multiple overlapping rounded blobs */}
-          <path d="M50 25 Q70 20 75 40 Q80 55 65 65 Q50 70 35 65 Q20 55 25 40 Q30 20 50 25" 
-            fill={config.leafColor} stroke="#33691E" strokeWidth="1.5" />
-          
-          {/* Additional bumpy masses for fullness */}
-          <path d="M35 35 Q50 30 55 45 Q50 55 35 50 Q25 42 35 35" 
-            fill={config.leafColor} opacity="0.9" />
-          <path d="M65 35 Q75 42 70 50 Q55 55 50 45 Q55 30 65 35" 
-            fill={config.leafColor} opacity="0.9" />
-          <path d="M40 55 Q50 48 60 55 Q65 65 50 68 Q35 65 40 55" 
-            fill={config.leafColor} opacity="0.9" />
-          
-          {/* Stage-specific additions */}
+          <circle cx="50" cy="40" r="20" fill={config.leafColor} />
+          <circle cx="30" cy="50" r="12" fill={config.leafColor} />
+          <circle cx="70" cy="50" r="12" fill={config.leafColor} />
           {stageIndex >= 4 && (
             <>
-              <ellipse cx="28" cy="42" rx="12" ry="10" fill={config.leafColor} opacity="0.8" />
-              <ellipse cx="72" cy="42" rx="12" ry="10" fill={config.leafColor} opacity="0.8" />
+              <circle cx="25" cy="40" r="10" fill={config.leafColor} />
+              <circle cx="75" cy="40" r="10" fill={config.leafColor} />
             </>
           )}
-          
           {stageIndex >= 6 && (
             <>
-              <path d="M20 50 Q30 40 35 52 Q30 62 20 58 Q15 52 20 50" fill={config.leafColor} opacity="0.85" />
-              <path d="M80 50 Q70 40 65 52 Q70 62 80 58 Q85 52 80 50" fill={config.leafColor} opacity="0.85" />
+              <circle cx="20" cy="55" r="8" fill={config.leafColor} />
+              <circle cx="80" cy="55" r="8" fill={config.leafColor} />
             </>
           )}
           
-          {/* Cherry blossoms or maple colors for mature */}
+          {/* Cherry blossoms */}
           {stage === 'mature' && type === 'cherry' && (
             <>
-              <circle cx="35" cy="35" r="5" fill="#FFF" opacity="0.9" />
-              <circle cx="55" cy="28" r="5" fill="#FFF" opacity="0.9" />
-              <circle cx="65" cy="42" r="5" fill="#FFF" opacity="0.9" />
-              <circle cx="45" cy="48" r="5" fill="#FFF" opacity="0.9" />
+              <circle cx="35" cy="35" r="4" fill="white" />
+              <circle cx="55" cy="30" r="4" fill="white" />
+              <circle cx="65" cy="42" r="4" fill="white" />
             </>
           )}
         </>
@@ -523,7 +486,7 @@ export default function GardenGame({ yardId, carrots: initialCarrots = 0, pet, p
                       height: '120px',
                     }}
                   >
-                    <HandDrawnTreeSVG type={tree.type} stage={tree.stage} health={tree.health} />
+                    <SimpleTree type={tree.type} stage={tree.stage} health={tree.health} />
                     
                     {/* Health warning */}
                     {tree.health < 50 && (
@@ -553,7 +516,7 @@ export default function GardenGame({ yardId, carrots: initialCarrots = 0, pet, p
                       height: '120px',
                     }}
                   >
-                    <HandDrawnTreeSVG type={tree.type} stage={tree.stage} health={0} />
+                    <SimpleTree type={tree.type} stage={tree.stage} health={0} />
                     <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#5D4037] text-white text-[9px] px-2 py-0.5 rounded-full whitespace-nowrap font-bold shadow-md">
                       Tap to remove
                     </div>
@@ -636,7 +599,7 @@ export default function GardenGame({ yardId, carrots: initialCarrots = 0, pet, p
               
               {/* Big tree */}
               <div className="w-56 h-64 mb-6">
-                <HandDrawnTreeSVG type={selectedTree.type} stage={selectedTree.stage} health={selectedTree.health} />
+                <SimpleTree type={selectedTree.type} stage={selectedTree.stage} health={selectedTree.health} />
               </div>
               
               {/* Health bar */}
@@ -708,7 +671,7 @@ export default function GardenGame({ yardId, carrots: initialCarrots = 0, pet, p
                   className="bg-[#C8E6C9] border-2 border-[#4CAF50] rounded-2xl p-4 flex flex-col items-center disabled:opacity-50 active:scale-95"
                 >
                   <div className="w-16 h-20 mb-2">
-                    <HandDrawnTreeSVG type={type as TreeType} stage="sapling" health={100} />
+                    <SimpleTree type={type as TreeType} stage="sapling" health={100} />
                   </div>
                   <p className="font-black text-[#33691E]">{config.name}</p>
                   <p className="text-xs text-[#558B2F]">{config.waterToNextStage}💧 per stage</p>
