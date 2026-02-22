@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Home, 
   Shirt, 
@@ -12,11 +12,19 @@ import {
   Heart,
   Coins,
   Sprout,
-  ArrowLeft
+  Plus
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import PlaidLinkButton from '@/components/plaid/PlaidLinkButton';
 import { useRouter } from 'next/navigation';
+import { 
+  FurnitureItem, 
+  PetCharacter, 
+  FURNITURE_ITEMS, 
+  PLANT_ITEMS, 
+  DECOR_ITEMS,
+  CLOTHING_ITEMS
+} from '@/components/game/FurnitureAssets';
 
 interface RoomViewProps {
   yardId: string;
@@ -40,23 +48,26 @@ interface PlacedItem {
   x: number;
   y: number;
   rotation?: number;
+  variant?: string;
 }
 
 type SidebarTab = 'shop' | 'closet' | 'bank' | 'settings' | null;
 
+// Admin email for infinite coins
+const ADMIN_EMAIL = '2landonl10@gmail.com';
+
 export default function RoomView({ yardId, coins: initialCoins, pet, profile, bankAccounts, user }: RoomViewProps) {
   const router = useRouter();
-  const [coins, setCoins] = useState(initialCoins);
+  const isAdmin = user?.email === ADMIN_EMAIL;
+  const [coins, setCoins] = useState(isAdmin ? 999999 : initialCoins);
   const [activeTab, setActiveTab] = useState<SidebarTab>(null);
-  const [showBankModal, setShowBankModal] = useState(bankAccounts.length === 0);
+  const [showBankModal, setShowBankModal] = useState(bankAccounts.length === 0 && !isAdmin);
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [petPosition, setPetPosition] = useState({ x: 225, y: 225 });
   
-  // Room items state
-  const [items, setItems] = useState<PlacedItem[]>([
-    { id: '1', type: 'desk', category: 'furniture', x: 2, y: 2, rotation: 0 },
-    { id: '2', type: 'plant', category: 'decor', x: 5, y: 1, rotation: 0 },
-    { id: '3', type: 'rug', category: 'decor', x: 3, y: 4, rotation: 0 },
-  ]);
+  // Room items state - starts empty (blank room)
+  const [items, setItems] = useState<PlacedItem[]>([]);
   
   // Check if mobile on mount
   useEffect(() => {
@@ -66,10 +77,39 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Pet movement animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPetPosition({
+        x: 150 + Math.random() * 150,
+        y: 150 + Math.random() * 150,
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/login');
+  };
+
+  const handleBuyItem = (itemType: string, category: 'furniture' | 'plant' | 'decor', price: number) => {
+    if (!isAdmin && coins < price) return;
+    
+    const newItem: PlacedItem = {
+      id: Date.now().toString(),
+      type: itemType,
+      category,
+      x: Math.floor(Math.random() * 7) + 1,
+      y: Math.floor(Math.random() * 7) + 1,
+      rotation: 0,
+    };
+    
+    setItems([...items, newItem]);
+    if (!isAdmin) {
+      setCoins(coins - price);
+    }
   };
 
   // Render the isometric room
@@ -80,19 +120,39 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
         <div 
           className="relative transition-transform duration-500"
           style={{
-            transform: isMobile ? 'rotateX(55deg) rotateZ(45deg) scale(0.7)' : 'rotateX(55deg) rotateZ(45deg) scale(0.9)',
+            transform: isMobile 
+              ? 'rotateX(55deg) rotateZ(45deg) scale(0.65)' 
+              : 'rotateX(55deg) rotateZ(45deg) scale(1.1)',
             transformStyle: 'preserve-3d',
           }}
         >
-          {/* Floor */}
-          <div className="relative w-[300px] h-[300px] bg-[#F5E6D3] rounded-lg shadow-2xl border-4 border-[#E8D5C4]">
-            {/* Floor grid pattern */}
-            <div className="absolute inset-0 opacity-20">
-              <div className="w-full h-full grid grid-cols-6 grid-rows-6">
-                {Array.from({ length: 36 }).map((_, i) => (
-                  <div key={i} className={`${i % 2 === 0 ? 'bg-[#D4C4B0]' : 'bg-transparent'}`} />
+          {/* Floor - BIGGER (450px) */}
+          <div className="relative w-[450px] h-[450px] bg-[#E6D5C3] rounded-lg shadow-2xl">
+            {/* Floor wood pattern */}
+            <div className="absolute inset-2 bg-[#D4C4B0] rounded">
+              {/* Wood planks */}
+              <div className="w-full h-full grid grid-cols-8 grid-rows-8 gap-[2px]">
+                {Array.from({ length: 64 }).map((_, i) => (
+                  <div 
+                    key={i} 
+                    className={`rounded-sm ${
+                      i % 3 === 0 ? 'bg-[#C9B8A4]' : 
+                      i % 3 === 1 ? 'bg-[#D4C4B0]' : 
+                      'bg-[#DECCB8]'
+                    }`} 
+                  />
                 ))}
               </div>
+            </div>
+            
+            {/* Room grid overlay for placement */}
+            <div className="absolute inset-2 grid grid-cols-9 grid-rows-9">
+              {Array.from({ length: 81 }).map((_, i) => (
+                <div 
+                  key={i} 
+                  className="border border-[#B8A890]/10"
+                />
+              ))}
             </div>
             
             {/* Room items */}
@@ -102,11 +162,12 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
             
             {/* Pet character */}
             <div 
-              className="absolute transition-all duration-700 ease-in-out"
+              className="absolute transition-all duration-[3000ms] ease-in-out"
               style={{
-                left: '150px',
-                top: '150px',
+                left: `${petPosition.x}px`,
+                top: `${petPosition.y}px`,
                 transform: 'rotateZ(-45deg) rotateX(-55deg) translateZ(20px)',
+                zIndex: 100,
               }}
             >
               <PetAvatar stage={pet?.stage || 'egg'} name={pet?.name || 'Buddy'} />
@@ -115,27 +176,77 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
           
           {/* Back wall */}
           <div 
-            className="absolute -top-[100px] left-0 w-[300px] h-[100px] bg-[#FFF8F0] origin-bottom"
+            className="absolute -top-[150px] left-0 w-[450px] h-[150px] bg-[#FDF8F3] origin-bottom rounded-t-lg"
             style={{ transform: 'rotateX(-90deg)' }}
           >
-            {/* Window */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-20 bg-[#E8F4F8] rounded-t-full border-4 border-[#D4E9F0]">
-              <div className="absolute top-1/2 left-0 w-full h-0.5 bg-[#D4E9F0]" />
-              <div className="absolute top-0 left-1/2 h-full w-0.5 bg-[#D4E9F0]" />
+            {/* Window - arched like Focus Friend */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2">
+              <svg width="80" height="100" viewBox="0 0 80 100" className="drop-shadow-md">
+                {/* Window frame */}
+                <path d="M10,40 Q10,10 40,10 Q70,10 70,40 L70,90 L10,90 Z" fill="#E8F4F8" stroke="#B8D4E3" strokeWidth="4"/>
+                {/* Window panes */}
+                <line x1="40" y1="10" x2="40" y2="90" stroke="#B8D4E3" strokeWidth="2"/>
+                <line x1="10" y1="50" x2="70" y2="50" stroke="#B8D4E3" strokeWidth="2"/>
+                {/* Sky gradient */}
+                <path d="M14,40 Q14,14 40,14 Q66,14 66,40 L66,86 L14,86 Z" fill="url(#skyGradient)"/>
+                {/* Clouds in window */}
+                <circle cx="30" cy="35" r="8" fill="white" opacity="0.8"/>
+                <circle cx="40" cy="30" r="10" fill="white" opacity="0.8"/>
+                <circle cx="50" cy="35" r="8" fill="white" opacity="0.8"/>
+                <defs>
+                  <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#87CEEB"/>
+                    <stop offset="100%" stopColor="#E8F4F8"/>
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
-            {/* Wall decor */}
-            <div className="absolute top-6 left-4 text-2xl">🌿</div>
-            <div className="absolute top-8 right-6 text-xl">⭐</div>
+            
+            {/* Wall decorations */}
+            <div className="absolute top-8 left-8">
+              <svg width="30" height="40" viewBox="0 0 30 40" className="drop-shadow-sm">
+                <rect x="2" y="2" width="26" height="36" fill="#8B7355" rx="2"/>
+                <rect x="5" y="5" width="20" height="30" fill="#F5E6D3"/>
+                <circle cx="15" cy="15" r="6" fill="#7EB8A2"/>
+              </svg>
+            </div>
+            
+            {/* Star decoration */}
+            <div className="absolute top-10 right-10">
+              <svg width="24" height="24" viewBox="0 0 24 24" className="animate-pulse">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#E8A87C"/>
+              </svg>
+            </div>
           </div>
           
           {/* Side wall */}
           <div 
-            className="absolute top-0 -left-[100px] w-[100px] h-[300px] bg-[#FDF5ED] origin-right"
+            className="absolute top-0 -left-[150px] w-[150px] h-[450px] bg-[#F5EDE4] origin-right rounded-l-lg"
             style={{ transform: 'rotateY(90deg)' }}
           >
-            {/* Picture frame */}
-            <div className="absolute top-8 left-1/2 -translate-x-1/2 w-12 h-16 bg-white rounded border-2 border-[#E8D5C4] flex items-center justify-center">
-              <span className="text-lg">🖼️</span>
+            {/* Picture frame on side wall */}
+            <div className="absolute top-10 left-1/2 -translate-x-1/2">
+              <svg width="50" height="60" viewBox="0 0 50 60" className="drop-shadow-md">
+                <rect x="5" y="5" width="40" height="50" fill="#8B7355" rx="3"/>
+                <rect x="8" y="8" width="34" height="44" fill="#FDF8F3" rx="2"/>
+                {/* Simple mountain art */}
+                <path d="M12,35 L20,20 L28,30 L35,15 L42,35 Z" fill="#7EB8A2" opacity="0.6"/>
+                <circle cx="35" cy="18" r="4" fill="#E8A87C" opacity="0.5"/>
+              </svg>
+            </div>
+            
+            {/* Plant on side wall shelf */}
+            <div className="absolute top-40 left-1/2 -translate-x-1/2">
+              <svg width="35" height="45" viewBox="0 0 35 45">
+                {/* Shelf */}
+                <rect x="0" y="35" width="35" height="6" fill="#8B7355" rx="1"/>
+                {/* Pot */}
+                <path d="M10,35 L12,25 L25,25 L27,35 Z" fill="#D9976B"/>
+                {/* Plant leaves */}
+                <ellipse cx="18" cy="22" rx="6" ry="10" fill="#7EB8A2"/>
+                <ellipse cx="14" cy="24" rx="5" ry="8" fill="#6BA08A"/>
+                <ellipse cx="22" cy="24" rx="5" ry="8" fill="#8ABFA8"/>
+              </svg>
             </div>
           </div>
         </div>
@@ -218,9 +329,17 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
               SAVE MONEY!
               <Sparkles className="w-6 h-6 animate-pulse" />
             </span>
-            {/* Decorative leaves */}
-            <span className="absolute -top-2 -left-2 text-2xl animate-bounce">🌱</span>
-            <span className="absolute -top-2 -right-2 text-2xl animate-bounce delay-100">🌿</span>
+            {/* Decorative leaves - SVG instead of emoji */}
+            <span className="absolute -top-2 -left-3">
+              <svg width="24" height="24" viewBox="0 0 24 24" className="animate-bounce">
+                <path d="M12 2C7 8 7 14 12 22C17 14 17 8 12 2Z" fill="#7EB8A2"/>
+              </svg>
+            </span>
+            <span className="absolute -top-2 -right-3">
+              <svg width="24" height="24" viewBox="0 0 24 24" className="animate-bounce delay-100">
+                <path d="M12 2C7 8 7 14 12 22C17 14 17 8 12 2Z" fill="#6BA08A"/>
+              </svg>
+            </span>
           </button>
         </div>
       </div>
@@ -231,10 +350,10 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-black text-[#2D5A4A]">
-                {activeTab === 'shop' && '🛍️ Shop'}
-                {activeTab === 'closet' && '👕 Closet'}
-                {activeTab === 'bank' && '🏦 Bank'}
-                {activeTab === 'settings' && '⚙️ Settings'}
+                {activeTab === 'shop' && 'Shop'}
+                {activeTab === 'closet' && 'Closet'}
+                {activeTab === 'bank' && 'Bank'}
+                {activeTab === 'settings' && 'Settings'}
               </h2>
               <button 
                 onClick={() => setActiveTab(null)}
@@ -244,10 +363,10 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
               </button>
             </div>
             
-            {activeTab === 'shop' && <ShopPanel coins={coins} />}
-            {activeTab === 'closet' && <ClosetPanel />}
-            {activeTab === 'bank' && <BankPanel bankAccounts={bankAccounts} />}
-            {activeTab === 'settings' && <SettingsPanel onSignOut={handleSignOut} user={user} />}
+            {activeTab === 'shop' && <ShopPanel coins={coins} onBuy={handleBuyItem} isAdmin={isAdmin} />}
+            {activeTab === 'closet' && <ClosetPanel onSelect={(item) => console.log('Selected:', item)} />}
+            {activeTab === 'bank' && <BankPanel bankAccounts={bankAccounts} onConnect={() => setShowBankModal(true)} />}
+            {activeTab === 'settings' && <SettingsPanel onSignOut={handleSignOut} user={user} isAdmin={isAdmin} />}
           </div>
         </div>
       )}
@@ -338,10 +457,10 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
           <div className="w-full bg-white rounded-t-3xl p-6 max-h-[70vh] overflow-y-auto animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-black text-[#2D5A4A]">
-                {activeTab === 'shop' && '🛍️ Shop'}
-                {activeTab === 'closet' && '👕 Closet'}
-                {activeTab === 'bank' && '🏦 Bank'}
-                {activeTab === 'settings' && '⚙️ Settings'}
+                {activeTab === 'shop' && 'Shop'}
+                {activeTab === 'closet' && 'Closet'}
+                {activeTab === 'bank' && 'Bank'}
+                {activeTab === 'settings' && 'Settings'}
               </h2>
               <button 
                 onClick={() => setActiveTab(null)}
@@ -351,10 +470,10 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
               </button>
             </div>
             
-            {activeTab === 'shop' && <ShopPanel coins={coins} mobile />}
-            {activeTab === 'closet' && <ClosetPanel mobile />}
-            {activeTab === 'bank' && <BankPanel bankAccounts={bankAccounts} mobile />}
-            {activeTab === 'settings' && <SettingsPanel onSignOut={handleSignOut} user={user} mobile />}
+            {activeTab === 'shop' && <ShopPanel coins={coins} onBuy={handleBuyItem} isAdmin={isAdmin} mobile />}
+            {activeTab === 'closet' && <ClosetPanel onSelect={(item) => console.log('Selected:', item)} mobile />}
+            {activeTab === 'bank' && <BankPanel bankAccounts={bankAccounts} onConnect={() => setShowBankModal(true)} mobile />}
+            {activeTab === 'settings' && <SettingsPanel onSignOut={handleSignOut} user={user} isAdmin={isAdmin} mobile />}
           </div>
         </div>
       )}
@@ -369,7 +488,17 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
       {showBankModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-            <h2 className="text-2xl font-black text-[#2D5A4A] mb-4 text-center">Connect Your Bank 🏦</h2>
+            <div className="flex justify-center mb-4">
+              <svg width="64" height="64" viewBox="0 0 64 64" className="text-[#7EB8A2]">
+                <rect x="8" y="20" width="48" height="36" rx="4" fill="#7EB8A2" opacity="0.2"/>
+                <rect x="12" y="24" width="40" height="28" rx="2" fill="none" stroke="#7EB8A2" strokeWidth="2"/>
+                <path d="M12 32 L52 32" stroke="#7EB8A2" strokeWidth="2"/>
+                <circle cx="20" cy="40" r="3" fill="#7EB8A2"/>
+                <path d="M32 8 L32 20" stroke="#7EB8A2" strokeWidth="3" strokeLinecap="round"/>
+                <circle cx="32" cy="8" r="4" fill="#E8A87C"/>
+              </svg>
+            </div>
+            <h2 className="text-2xl font-black text-[#2D5A4A] mb-4 text-center">Connect Your Bank</h2>
             <p className="text-[#5A8A7A] mb-6 text-center">
               Link your bank account to start earning coins for saving money!
             </p>
@@ -434,26 +563,17 @@ function ResourceBar({ icon, value, max, color, label, compact = false }: {
 }
 
 function RoomItem({ item }: { item: PlacedItem }) {
-  const itemEmojis: Record<string, string> = {
-    desk: '🪑',
-    plant: '🪴',
-    rug: '🧶',
-    bed: '🛏️',
-    lamp: '💡',
-    bookshelf: '📚',
-    painting: '🖼️',
-  };
-
   return (
     <div
-      className="absolute text-4xl transition-all duration-300 hover:scale-110 cursor-pointer"
+      className="absolute transition-all duration-300 hover:scale-110 cursor-pointer"
       style={{
         left: `${item.x * 50}px`,
         top: `${item.y * 50}px`,
         transform: `rotateZ(-45deg) rotateX(-55deg) translateZ(10px)`,
+        zIndex: 10,
       }}
     >
-      {itemEmojis[item.type] || '📦'}
+      <FurnitureItem type={item.type} />
     </div>
   );
 }
@@ -461,11 +581,11 @@ function RoomItem({ item }: { item: PlacedItem }) {
 function PetAvatar({ stage, name }: { stage: string; name: string }) {
   return (
     <div className="relative group">
-      <div className="text-5xl animate-bounce">
-        {stage === 'egg' ? '🥚' : '🐻'}
+      <div className="animate-bounce">
+        <PetCharacter stage={stage} isMoving />
       </div>
       {/* Speech bubble on hover */}
-      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white px-3 py-1.5 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white px-3 py-1.5 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
         <span className="text-sm font-bold text-[#2D5A4A]">Hi! I&apos;m {name}</span>
         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45" />
       </div>
@@ -473,29 +593,39 @@ function PetAvatar({ stage, name }: { stage: string; name: string }) {
   );
 }
 
-function ShopPanel({ coins, mobile = false }: { coins: number; mobile?: boolean }) {
-  const items = [
-    { id: '1', name: 'Cozy Chair', emoji: '🪑', price: 50, category: 'furniture' },
-    { id: '2', name: 'Potted Plant', emoji: '🪴', price: 30, category: 'decor' },
-    { id: '3', name: 'Reading Lamp', emoji: '💡', price: 40, category: 'decor' },
-    { id: '4', name: 'Bookshelf', emoji: '📚', price: 80, category: 'furniture' },
-    { id: '5', name: 'Rug', emoji: '🧶', price: 60, category: 'decor' },
-    { id: '6', name: 'Bed', emoji: '🛏️', price: 100, category: 'furniture' },
+function ShopPanel({ 
+  coins, 
+  onBuy, 
+  isAdmin = false,
+  mobile = false 
+}: { 
+  coins: number; 
+  onBuy: (itemType: string, category: 'furniture' | 'plant' | 'decor', price: number) => void;
+  isAdmin?: boolean;
+  mobile?: boolean;
+}) {
+  const allItems = [
+    ...FURNITURE_ITEMS,
+    ...PLANT_ITEMS,
+    ...DECOR_ITEMS,
   ];
 
   return (
-    <div className={`grid ${mobile ? 'grid-cols-2' : 'grid-cols-2'} gap-3`}>
-      {items.map((item) => (
+    <div className={`grid ${mobile ? 'grid-cols-2' : 'grid-cols-2'} gap-3 max-h-[60vh] overflow-y-auto`}>
+      {allItems.map((item) => (
         <button
           key={item.id}
-          disabled={coins < item.price}
+          onClick={() => onBuy(item.id, item.category, item.price)}
+          disabled={!isAdmin && coins < item.price}
           className="bg-[#F5F9FB] hover:bg-white border-2 border-[#B8D4E3] hover:border-[#7EB8A2] rounded-2xl p-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
         >
-          <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">{item.emoji}</div>
+          <div className="flex justify-center mb-2">
+            <FurnitureItem type={item.id} className="group-hover:scale-110 transition-transform" />
+          </div>
           <div className="font-bold text-[#2D5A4A] text-sm">{item.name}</div>
           <div className="flex items-center justify-center gap-1 mt-1">
             <Coins className="w-3 h-3 text-[#E8A87C]" />
-            <span className="text-sm font-black text-[#E8A87C]">{item.price}</span>
+            <span className="text-sm font-black text-[#E8A87C]">{isAdmin ? 'FREE' : item.price}</span>
           </div>
         </button>
       ))}
@@ -503,30 +633,42 @@ function ShopPanel({ coins, mobile = false }: { coins: number; mobile?: boolean 
   );
 }
 
-function ClosetPanel({ mobile = false }: { mobile?: boolean }) {
-  const outfits = [
-    { id: '1', name: 'Beanie', emoji: '🧢' },
-    { id: '2', name: 'Glasses', emoji: '👓' },
-    { id: '3', name: 'Scarf', emoji: '🧣' },
-    { id: '4', name: 'Crown', emoji: '👑' },
-  ];
+function ClosetPanel({ 
+  onSelect, 
+  mobile = false 
+}: { 
+  onSelect?: (item: { id: string; name: string }) => void;
+  mobile?: boolean;
+}) {
+  const outfits: { id: string; name: string; price: number; category: string }[] = CLOTHING_ITEMS;
 
   return (
     <div className={`grid ${mobile ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
       {outfits.map((outfit) => (
         <button
           key={outfit.id}
+          onClick={() => onSelect?.(outfit)}
           className="bg-[#F5F9FB] hover:bg-white border-2 border-[#B8D4E3] hover:border-[#E8919C] rounded-2xl p-4 transition-all"
         >
-          <div className="text-3xl mb-2">{outfit.emoji}</div>
-          <div className="font-bold text-[#2D5A4A] text-sm">{outfit.name}</div>
+          <div className="flex justify-center mb-2">
+            <FurnitureItem type={outfit.id} />
+          </div>
+          <div className="font-bold text-[#2D5A4A] text-sm text-center">{outfit.name}</div>
         </button>
       ))}
     </div>
   );
 }
 
-function BankPanel({ bankAccounts, mobile = false }: { bankAccounts: any[]; mobile?: boolean }) {
+function BankPanel({ 
+  bankAccounts, 
+  onConnect,
+  mobile = false 
+}: { 
+  bankAccounts: any[]; 
+  onConnect?: () => void;
+  mobile?: boolean;
+}) {
   return (
     <div className="space-y-4">
       {bankAccounts.length > 0 ? (
@@ -545,21 +687,53 @@ function BankPanel({ bankAccounts, mobile = false }: { bankAccounts: any[]; mobi
         ))
       ) : (
         <div className="text-center py-8">
-          <div className="text-4xl mb-4">🏦</div>
+          <div className="flex justify-center mb-4">
+            <svg width="48" height="48" viewBox="0 0 64 64" className="text-[#7EB8A2]">
+              <rect x="8" y="20" width="48" height="36" rx="4" fill="#7EB8A2" opacity="0.2"/>
+              <rect x="12" y="24" width="40" height="28" rx="2" fill="none" stroke="#7EB8A2" strokeWidth="2"/>
+              <path d="M12 32 L52 32" stroke="#7EB8A2" strokeWidth="2"/>
+              <circle cx="20" cy="40" r="3" fill="#7EB8A2"/>
+            </svg>
+          </div>
           <p className="text-[#5A8A7A] mb-4">No bank connected yet</p>
-          <PlaidLinkButton />
+          {onConnect ? (
+            <button 
+              onClick={onConnect}
+              className="bg-[#7EB8A2] hover:bg-[#6BA08A] text-white font-bold py-2 px-6 rounded-xl transition-all"
+            >
+              Connect Bank
+            </button>
+          ) : (
+            <PlaidLinkButton />
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function SettingsPanel({ onSignOut, user, mobile = false }: { onSignOut: () => void; user: any; mobile?: boolean }) {
+function SettingsPanel({ 
+  onSignOut, 
+  user, 
+  isAdmin = false,
+  mobile = false 
+}: { 
+  onSignOut: () => void | Promise<void>; 
+  user: any; 
+  isAdmin?: boolean;
+  mobile?: boolean;
+}) {
   return (
     <div className="space-y-4">
       <div className="bg-[#F5F9FB] rounded-2xl p-4 border-2 border-[#B8D4E3]">
         <div className="font-bold text-[#2D5A4A] mb-1">Email</div>
         <div className="text-[#5A8A7A] text-sm">{user.email}</div>
+        {isAdmin && (
+          <div className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-[#E8A87C]/20 text-[#E8A87C] rounded-full text-xs font-bold">
+            <Sparkles className="w-3 h-3" />
+            Admin - Infinite Coins
+          </div>
+        )}
       </div>
       
       <button

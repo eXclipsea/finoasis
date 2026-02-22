@@ -57,17 +57,62 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* Cute room preview illustration placeholder */}
+          {/* Room preview illustration with custom SVG */}
           <div className="mt-16 relative">
-            <div className="w-80 h-80 md:w-96 md:h-96 bg-white/50 rounded-3xl border-4 border-white shadow-2xl flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🏠</div>
-                <p className="text-[#5A8A7A] font-medium">Your cozy room awaits!</p>
-              </div>
+            <div className="w-80 h-80 md:w-96 md:h-96 bg-white/50 rounded-3xl border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden">
+              <svg viewBox="0 0 200 200" className="w-full h-full">
+                {/* Background */}
+                <rect x="20" y="20" width="160" height="160" rx="20" fill="#FDF8F3"/>
+                
+                {/* Floor */}
+                <path d="M20 120 L100 180 L180 120 L100 60 Z" fill="#E6D5C3"/>
+                <path d="M20 120 L100 180 L180 120" stroke="#D4C4B0" strokeWidth="2" fill="none"/>
+                
+                {/* Window */}
+                <path d="M70 40 Q70 20 100 20 Q130 20 130 40 L130 70 L70 70 Z" fill="#E8F4F8" stroke="#B8D4E3" strokeWidth="3"/>
+                <line x1="100" y1="20" x2="100" y2="70" stroke="#B8D4E3" strokeWidth="2"/>
+                <line x1="70" y1="45" x2="130" y2="45" stroke="#B8D4E3" strokeWidth="2"/>
+                {/* Cloud in window */}
+                <circle cx="90" cy="38" r="6" fill="white"/>
+                <circle cx="100" cy="32" r="8" fill="white"/>
+                <circle cx="110" cy="38" r="6" fill="white"/>
+                
+                {/* Plant */}
+                <ellipse cx="150" cy="95" rx="8" ry="12" fill="#7EB8A2"/>
+                <ellipse cx="142" cy="100" rx="5" ry="8" fill="#6BA08A"/>
+                <ellipse cx="158" cy="100" rx="5" ry="8" fill="#8ABFA8"/>
+                <path d="M142 110 L145 125 L155 125 L158 110 Z" fill="#D9976B"/>
+                
+                {/* Chair */}
+                <ellipse cx="60" cy="115" rx="15" ry="10" fill="#A67B5B"/>
+                <ellipse cx="60" cy="110" rx="12" ry="8" fill="#C9A77D"/>
+                <path d="M48 105 Q45 90 60 88 Q75 90 72 105" fill="#8B6914"/>
+                
+                {/* Rug */}
+                <ellipse cx="100" cy="135" rx="30" ry="15" fill="#E8A87C" opacity="0.7"/>
+                <ellipse cx="100" cy="135" rx="20" ry="10" fill="#F0C4A8" opacity="0.5"/>
+                
+                {/* Pet character */}
+                <ellipse cx="100" cy="125" rx="12" ry="10" fill="#A67B5B"/>
+                <circle cx="100" cy="110" r="10" fill="#C9A77D"/>
+                <ellipse cx="90" cy="105" rx="3" ry="5" fill="#A67B5B"/>
+                <ellipse cx="110" cy="105" rx="3" ry="5" fill="#A67B5B"/>
+                <circle cx="97" cy="108" r="2" fill="#3D2914"/>
+                <circle cx="103" cy="108" r="2" fill="#3D2914"/>
+              </svg>
             </div>
-            {/* Floating elements */}
-            <div className="absolute -top-4 -right-4 w-16 h-16 bg-[#7EB8A2]/20 rounded-full flex items-center justify-center text-2xl animate-bounce">💰</div>
-            <div className="absolute -bottom-2 -left-6 w-14 h-14 bg-[#E8A87C]/20 rounded-full flex items-center justify-center text-xl animate-pulse">🌱</div>
+            {/* Floating decorative elements - SVG instead of emoji */}
+            <div className="absolute -top-4 -right-4 w-16 h-16 bg-[#7EB8A2]/20 rounded-full flex items-center justify-center animate-bounce">
+              <svg width="24" height="24" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="#E8A87C"/>
+                <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">$</text>
+              </svg>
+            </div>
+            <div className="absolute -bottom-2 -left-6 w-14 h-14 bg-[#E8A87C]/20 rounded-full flex items-center justify-center animate-pulse">
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <path d="M12 2C7 8 7 14 12 22C17 14 17 8 12 2Z" fill="#7EB8A2"/>
+              </svg>
+            </div>
           </div>
         </section>
 
