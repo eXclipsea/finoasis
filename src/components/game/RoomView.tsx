@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { ChevronLeft, X } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { X, Droplets, Sprout, Flower2, Coins } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -14,186 +14,207 @@ interface RoomViewProps {
   user: any;
 }
 
-// Simple geometric reward icons
-const REWARD_ICONS: Record<string, React.FC<{className?: string}>> = {
-  carrot: ({ className }) => (
-    <svg viewBox="0 0 40 40" className={className}>
-      <ellipse cx="20" cy="25" rx="10" ry="15" fill="#FF8C42" stroke="#CC5500" strokeWidth="2"/>
-      <path d="M20 10 L18 5 L22 5 Z" fill="#228B22"/>
-    </svg>
-  ),
-  coin: ({ className }) => (
-    <svg viewBox="0 0 40 40" className={className}>
-      <circle cx="20" cy="20" r="16" fill="#FFD700" stroke="#B8860B" strokeWidth="2"/>
-      <text x="20" y="26" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#B8860B">$</text>
-    </svg>
-  ),
-  gem: ({ className }) => (
-    <svg viewBox="0 0 40 40" className={className}>
-      <path d="M20 5 L35 15 L20 35 L5 15 Z" fill="#40E0D0" stroke="#008B8B" strokeWidth="2"/>
-      <path d="M20 5 L20 15 L35 15" fill="#48D1CC" opacity="0.5"/>
-    </svg>
-  ),
-  star: ({ className }) => (
-    <svg viewBox="0 0 40 40" className={className}>
-      <path d="M20 3 L25 15 L38 15 L28 23 L32 36 L20 28 L8 36 L12 23 L2 15 L15 15 Z" fill="#FFD700" stroke="#DAA520" strokeWidth="2"/>
-    </svg>
-  ),
-  heart: ({ className }) => (
-    <svg viewBox="0 0 40 40" className={className}>
-      <path d="M20 35 L8 22 C3 16 3 8 10 5 C15 3 18 7 20 10 C22 7 25 3 30 5 C37 8 37 16 32 22 Z" fill="#FF69B4" stroke="#C71585" strokeWidth="2"/>
-    </svg>
-  ),
-  crown: ({ className }) => (
-    <svg viewBox="0 0 40 40" className={className}>
-      <path d="M5 30 L35 30 L32 10 L25 18 L20 8 L15 18 L8 10 Z" fill="#FFD700" stroke="#B8860B" strokeWidth="2"/>
-      <circle cx="10" cy="28" r="2" fill="#FF0000"/>
-      <circle cx="20" cy="28" r="2" fill="#0000FF"/>
-      <circle cx="30" cy="28" r="2" fill="#00FF00"/>
-    </svg>
-  ),
+type PlantStage = 'seed' | 'sprout' | 'growing' | 'mature' | 'flowering' | 'harvest';
+
+interface Plant {
+  id: string;
+  type: 'carrot' | 'tomato' | 'sunflower' | 'rose';
+  stage: PlantStage;
+  growth: number; // 0-100
+  water: number; // 0-100
+  plantedAt: number;
+}
+
+const PLANT_CONFIG = {
+  carrot: { name: 'Carrot', stages: 5, color: '#FF8C42', value: 10, waterCost: 5 },
+  tomato: { name: 'Tomato', stages: 6, color: '#FF6347', value: 15, waterCost: 8 },
+  sunflower: { name: 'Sunflower', stages: 7, color: '#FFD700', value: 25, waterCost: 12 },
+  rose: { name: 'Rose', stages: 8, color: '#FF69B4', value: 40, waterCost: 15 },
 };
 
-const REWARDS = [
-  { id: 'coin', name: '10 Coins', value: 10, icon: 'coin', chance: 0.4 },
-  { id: 'carrot', name: '5 Carrots', value: 5, icon: 'carrot', chance: 0.3 },
-  { id: 'gem', name: 'Rare Gem', value: 50, icon: 'gem', chance: 0.15 },
-  { id: 'star', name: 'Star Power', value: 100, icon: 'star', chance: 0.1 },
-  { id: 'heart', name: 'Love Boost', value: 25, icon: 'heart', chance: 0.04 },
-  { id: 'crown', name: 'JACKPOT!', value: 500, icon: 'crown', chance: 0.01 },
-];
+const STAGE_THRESHOLDS: Record<PlantStage, number> = {
+  seed: 0,
+  sprout: 15,
+  growing: 35,
+  mature: 60,
+  flowering: 80,
+  harvest: 100,
+};
 
-const SPIN_COST = 5;
-
-// Slot machine reel
-const Reel = ({ spinning, finalReward, position }: { spinning: boolean; finalReward: any; position: number }) => {
-  const offset = position * -80;
+// Simple plant SVG component
+const PlantSVG = ({ plant, stage }: { plant: Plant; stage: PlantStage }) => {
+  const config = PLANT_CONFIG[plant.type];
+  const progress = plant.growth / 100;
+  
+  const getHeight = () => {
+    switch (stage) {
+      case 'seed': return 10;
+      case 'sprout': return 25;
+      case 'growing': return 40 + (progress - 0.35) * 30;
+      case 'mature': return 70 + (progress - 0.6) * 20;
+      case 'flowering': return 90;
+      case 'harvest': return 100;
+    }
+  };
+  
+  const h = getHeight();
   
   return (
-    <div className="w-20 h-20 bg-white border-4 border-[#8B4513] rounded-lg overflow-hidden relative shadow-inner">
-      <div 
-        className="absolute transition-transform duration-100"
-        style={{ 
-          transform: spinning ? `translateY(${offset}px)` : `translateY(${-80 * REWARDS.findIndex(r => r.id === finalReward?.id)}px)`,
-          transition: spinning ? 'none' : 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-        }}
-      >
-        {[...REWARDS, ...REWARDS, ...REWARDS].map((reward, i) => {
-          const Icon = REWARD_ICONS[reward.icon];
-          return (
-            <div key={i} className="w-20 h-20 flex items-center justify-center">
-              <Icon className="w-14 h-14" />
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <svg viewBox="0 0 60 100" className="w-full h-full">
+      {/* Soil */}
+      <ellipse cx="30" cy="90" rx="25" ry="8" fill="#8B4513" opacity="0.6" />
+      
+      {stage === 'seed' && (
+        <ellipse cx="30" cy="88" rx="6" ry="4" fill="#654321" />
+      )}
+      
+      {(stage === 'sprout' || stage === 'growing') && (
+        <>
+          {/* Stem */}
+          <path 
+            d={`M30 88 Q${30 + Math.sin(progress * 10) * 5} ${88 - h/2} 30 ${88 - h}`}
+            stroke={config.color}
+            strokeWidth="4"
+            fill="none"
+            strokeLinecap="round"
+          />
+          {/* Leaves */}
+          <ellipse cx="25" cy={88 - h/2} rx="8" ry="4" fill="#228B22" transform={`rotate(-30 25 ${88 - h/2})`} />
+          <ellipse cx="35" cy={88 - h/3} rx="8" ry="4" fill="#228B22" transform={`rotate(30 35 ${88 - h/3})`} />
+        </>
+      )}
+      
+      {(stage === 'mature' || stage === 'flowering' || stage === 'harvest') && (
+        <>
+          {/* Full stem */}
+          <path d="M30 88 Q32 50 30 20" stroke={config.color} strokeWidth="5" fill="none" strokeLinecap="round" />
+          {/* More leaves */}
+          <ellipse cx="22" cy="70" rx="10" ry="5" fill="#228B22" transform="rotate(-25 22 70)" />
+          <ellipse cx="38" cy="60" rx="10" ry="5" fill="#228B22" transform="rotate(25 38 60)" />
+          <ellipse cx="24" cy="45" rx="8" ry="4" fill="#228B22" transform="rotate(-20 24 45)" />
+          <ellipse cx="36" cy="35" rx="8" ry="4" fill="#228B22" transform="rotate(20 36 35)" />
+        </>
+      )}
+      
+      {/* Flower/fruit */}
+      {stage === 'flowering' && (
+        <>
+          <circle cx="30" cy="20" r="12" fill={config.color} />
+          <circle cx="30" cy="20" r="8" fill="#FFD700" />
+          <circle cx="30" cy="20" r="3" fill="#8B4513" />
+        </>
+      )}
+      
+      {stage === 'harvest' && (
+        <>
+          {plant.type === 'carrot' && (
+            <path d="M25 25 L30 15 L35 25 L32 50 L28 50 Z" fill="#FF8C42" stroke="#CC5500" strokeWidth="2" />
+          )}
+          {plant.type === 'tomato' && (
+            <circle cx="30" cy="30" r="12" fill="#FF6347" stroke="#CC2200" strokeWidth="2" />
+          )}
+          {plant.type === 'sunflower' && (
+            <>
+              <circle cx="30" cy="25" r="15" fill="#FFD700" stroke="#DAA520" strokeWidth="2" />
+              <circle cx="30" cy="25" r="8" fill="#8B4513" />
+            </>
+          )}
+          {plant.type === 'rose' && (
+            <>
+              <circle cx="30" cy="22" r="10" fill="#FF69B4" />
+              <circle cx="30" cy="22" r="7" fill="#FF1493" />
+              <circle cx="30" cy="22" r="4" fill="#FFB6C1" />
+            </>
+          )}
+        </>
+      )}
+      
+      {/* Water indicator */}
+      {plant.water < 30 && (
+        <text x="30" y="10" textAnchor="middle" fontSize="12">💧</text>
+      )}
+    </svg>
   );
 };
 
-export default function GachaGame({ yardId, carrots: initialCarrots = 0, pet, profile, bankAccounts = [], user }: RoomViewProps) {
+export default function GardenGame({ yardId, carrots: initialCarrots = 0, pet, profile, bankAccounts = [], user }: RoomViewProps) {
   const router = useRouter();
   const supabase = createClient();
   
   const isAdmin = user?.email === '2landonl10@gmail.com';
   const [carrots, setCarrots] = useState(isAdmin ? 999999 : initialCarrots);
-  const [inventory, setInventory] = useState<{id: string; icon: string; name: string; value: number}[]>([]);
-  const [showInventory, setShowInventory] = useState(false);
+  const [coins, setCoins] = useState(0);
   
-  // Slot machine state
-  const [reels, setReels] = useState([REWARDS[0], REWARDS[0], REWARDS[0]]);
-  const [spinning, setSpinning] = useState(false);
-  const [spinPositions, setSpinPositions] = useState([0, 0, 0]);
-  const [lastWin, setLastWin] = useState<any>(null);
-  const [showWinModal, setShowWinModal] = useState(false);
-  const [jackpot, setJackpot] = useState(false);
+  const [plants, setPlants] = useState<Plant[]>([
+    { id: '1', type: 'carrot', stage: 'seed', growth: 0, water: 50, plantedAt: Date.now() },
+    { id: '2', type: 'tomato', stage: 'sprout', growth: 20, water: 40, plantedAt: Date.now() },
+  ]);
   
-  // Bank connection for "Save to Spin"
-  const [savingsAmount, setSavingsAmount] = useState(10);
+  const [selectedSeed, setSelectedSeed] = useState<keyof typeof PLANT_CONFIG | null>(null);
+  const [showShop, setShowShop] = useState(false);
+  const [saveAmount, setSaveAmount] = useState(10);
 
-  const spin = async () => {
-    if (spinning) return;
-    if (carrots < SPIN_COST && !isAdmin) return;
+  const waterPlant = (plantId: string) => {
+    const plant = plants.find(p => p.id === plantId);
+    if (!plant) return;
     
-    if (!isAdmin) setCarrots(c => c - SPIN_COST);
-    setSpinning(true);
-    setJackpot(false);
-    setLastWin(null);
+    const cost = PLANT_CONFIG[plant.type].waterCost;
+    if (carrots < cost && !isAdmin) return;
     
-    // Animate
-    const duration = 2000;
-    const startTime = Date.now();
+    if (!isAdmin) setCarrots(c => c - cost);
     
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Random positions during spin
-      setSpinPositions([
-        Math.floor(Math.random() * REWARDS.length * 3),
-        Math.floor(Math.random() * REWARDS.length * 3),
-        Math.floor(Math.random() * REWARDS.length * 3)
-      ]);
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        // Final result
-        const results = [
-          weightedRandom(),
-          weightedRandom(),
-          weightedRandom()
-        ];
-        setReels(results);
-        setSpinPositions(results.map(r => REWARDS.findIndex(x => x.id === r.id)));
-        setSpinning(false);
+    setPlants(prev => prev.map(p => {
+      if (p.id === plantId) {
+        const newWater = Math.min(100, p.water + 40);
+        const newGrowth = Math.min(100, p.growth + 15);
         
-        // Calculate win
-        const allMatch = results[0].id === results[1].id && results[1].id === results[2].id;
-        const twoMatch = results[0].id === results[1].id || results[1].id === results[2].id || results[0].id === results[2].id;
-        
-        if (allMatch) {
-          // Jackpot - 10x value
-          const winValue = results[0].value * 10;
-          setCarrots(c => c + winValue);
-          setLastWin({ ...results[0], winValue });
-          setJackpot(true);
-          setShowWinModal(true);
-          setInventory(prev => [...prev, results[0], results[0], results[0]]);
-        } else if (twoMatch) {
-          // Small win - 2x value
-          const matched = results[0].id === results[1].id ? results[0] : results[1];
-          const winValue = matched.value * 2;
-          setCarrots(c => c + winValue);
-          setLastWin({ ...matched, winValue });
-          setShowWinModal(true);
-          setInventory(prev => [...prev, matched, matched]);
-        } else {
-          // No win - but give consolation item
-          setInventory(prev => [...prev, results[0]]);
+        // Determine stage
+        let newStage: PlantStage = 'seed';
+        for (const [stage, threshold] of Object.entries(STAGE_THRESHOLDS)) {
+          if (newGrowth >= threshold) {
+            newStage = stage as PlantStage;
+          }
         }
+        
+        return { ...p, water: newWater, growth: newGrowth, stage: newStage };
       }
+      return p;
+    }));
+  };
+  
+  const harvestPlant = (plantId: string) => {
+    const plant = plants.find(p => p.id === plantId);
+    if (!plant || plant.stage !== 'harvest') return;
+    
+    const value = PLANT_CONFIG[plant.type].value;
+    setCoins(c => c + value);
+    
+    // Reset to empty plot or remove
+    setPlants(prev => prev.filter(p => p.id !== plantId));
+  };
+  
+  const plantSeed = (type: keyof typeof PLANT_CONFIG) => {
+    if (carrots < 3 && !isAdmin) return;
+    if (!isAdmin) setCarrots(c => c - 3);
+    
+    const newPlant: Plant = {
+      id: Date.now().toString(),
+      type,
+      stage: 'seed',
+      growth: 0,
+      water: 50,
+      plantedAt: Date.now(),
     };
     
-    requestAnimationFrame(animate);
+    setPlants(prev => [...prev, newPlant]);
+    setSelectedSeed(null);
   };
   
-  const weightedRandom = () => {
-    const rand = Math.random();
-    let cumulative = 0;
-    for (const reward of REWARDS) {
-      cumulative += reward.chance;
-      if (rand <= cumulative) return reward;
-    }
-    return REWARDS[0];
-  };
-
-  const handleSaveToSpin = () => {
-    // In real app, this would trigger a bank transfer
-    // For now, simulate saving money
-    const earnedCarrots = Math.floor(savingsAmount / 2);
-    setCarrots(c => c + earnedCarrots);
-    alert(`Saved $${savingsAmount}! Earned ${earnedCarrots} carrots.`);
+  const handleSave = () => {
+    // Simulate saving - in real app this would be a bank transfer
+    const earned = Math.floor(saveAmount / 5);
+    setCarrots(c => c + earned);
+    alert(`Saved $${saveAmount}! Got ${earned} water credits.`);
   };
 
   const handleSignOut = async () => {
@@ -202,115 +223,139 @@ export default function GachaGame({ yardId, carrots: initialCarrots = 0, pet, pr
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-[#1a1a2e] to-[#16213e]">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
-          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#FF8C42] to-[#CC5500]" />
-          <span className="font-bold text-white">{carrots}</span>
+    <div className="flex flex-col h-screen bg-gradient-to-b from-sky-200 to-green-100">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-white/50 backdrop-blur">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 bg-orange-100 px-3 py-1 rounded-full">
+            <Droplets className="w-4 h-4 text-blue-500" />
+            <span className="font-bold text-orange-600">{carrots}</span>
+          </div>
+          <div className="flex items-center gap-1 bg-yellow-100 px-3 py-1 rounded-full">
+            <Coins className="w-4 h-4 text-yellow-600" />
+            <span className="font-bold text-yellow-700">{coins}</span>
+          </div>
         </div>
-        <button onClick={() => setShowInventory(true)} className="bg-white/10 px-3 py-1.5 rounded-full text-white text-sm">
-          Inventory ({inventory.length})
-        </button>
+        <button onClick={handleSignOut} className="text-sm text-gray-600">Logout</button>
       </div>
 
-      {/* Main slot machine */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4">
-        {/* Machine frame */}
-        <div className="bg-gradient-to-b from-[#8B4513] to-[#654321] p-4 rounded-2xl shadow-2xl border-4 border-[#4a3010]">
-          {/* Glass window */}
-          <div className="bg-[#2a2a3a] p-4 rounded-xl border-4 border-[#4a3010] mb-4">
-            <div className="flex gap-2">
-              {reels.map((reward, i) => (
-                <Reel key={i} spinning={spinning} finalReward={reward} position={spinPositions[i]} />
-              ))}
-            </div>
-          </div>
+      {/* Garden Grid */}
+      <div className="flex-1 p-4">
+        <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+          {plants.map(plant => {
+            const config = PLANT_CONFIG[plant.type];
+            const canHarvest = plant.stage === 'harvest';
+            const needsWater = plant.water < 40;
+            
+            return (
+              <div 
+                key={plant.id}
+                className={`relative bg-gradient-to-b from-amber-100 to-amber-200 rounded-2xl p-4 h-48 shadow-lg ${canHarvest ? 'ring-4 ring-yellow-400 animate-pulse' : ''}`}
+              >
+                {/* Plant */}
+                <div className="h-32">
+                  <PlantSVG plant={plant} stage={plant.stage} />
+                </div>
+                
+                {/* Info */}
+                <div className="absolute bottom-2 left-2 right-2">
+                  <p className="text-xs font-bold text-amber-800 capitalize">{config.name}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-white/50 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 rounded-full" style={{ width: `${plant.growth}%` }} />
+                    </div>
+                    <span className="text-[10px] text-amber-700">{Math.floor(plant.growth)}%</span>
+                  </div>
+                </div>
+                
+                {/* Action button */}
+                {canHarvest ? (
+                  <button 
+                    onClick={() => harvestPlant(plant.id)}
+                    className="absolute top-2 right-2 bg-yellow-400 text-white p-2 rounded-full shadow-lg animate-bounce"
+                  >
+                    <Coins className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => waterPlant(plant.id)}
+                    disabled={carrots < config.waterCost && !isAdmin}
+                    className={`absolute top-2 right-2 p-2 rounded-full shadow-lg transition-transform active:scale-90 ${
+                      needsWater ? 'bg-blue-500 text-white animate-pulse' : 'bg-white/80 text-blue-500'
+                    } ${carrots < config.waterCost && !isAdmin ? 'opacity-50' : ''}`}
+                  >
+                    <Droplets className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
           
-          {/* Lever */}
-          <div className="flex items-center justify-center gap-4">
-            <button
-              onClick={spin}
-              disabled={spinning || (carrots < SPIN_COST && !isAdmin)}
-              className="flex-1 bg-gradient-to-b from-[#FF8C42] to-[#CC5500] text-white font-black py-4 px-8 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-transform"
-            >
-              {spinning ? 'SPINNING...' : `SPIN (${SPIN_COST} 🥕)`}
-            </button>
-          </div>
+          {/* Empty plot / Plant button */}
+          <button 
+            onClick={() => setShowShop(true)}
+            className="bg-white/40 border-4 border-dashed border-amber-300 rounded-2xl h-48 flex flex-col items-center justify-center hover:bg-white/60 transition-colors"
+          >
+            <Sprout className="w-12 h-12 text-amber-400 mb-2" />
+            <span className="text-sm font-bold text-amber-600">Plant Seed</span>
+            <span className="text-xs text-amber-500">3 💧</span>
+          </button>
         </div>
+      </div>
 
-        {/* Save to earn more */}
-        <div className="mt-8 bg-white/10 rounded-xl p-4 w-full max-w-sm">
-          <p className="text-white/60 text-sm mb-2 text-center">Save money to earn carrots</p>
+      {/* Save to get water */}
+      <div className="px-4 pb-2">
+        <div className="bg-white rounded-xl p-3 shadow-lg">
+          <p className="text-xs text-gray-500 mb-2">Save money to get water credits</p>
           <div className="flex gap-2">
             <input
               type="number"
-              value={savingsAmount}
-              onChange={(e) => setSavingsAmount(Math.max(1, parseInt(e.target.value) || 0))}
-              className="flex-1 bg-white/20 text-white rounded-lg px-3 py-2 text-center font-bold"
+              value={saveAmount}
+              onChange={(e) => setSaveAmount(Math.max(1, parseInt(e.target.value) || 0))}
+              className="flex-1 bg-gray-100 rounded-lg px-3 py-2 text-center font-bold"
             />
             <button
-              onClick={handleSaveToSpin}
-              className="bg-green-600 text-white font-bold px-4 py-2 rounded-lg active:scale-95"
+              onClick={handleSave}
+              className="bg-green-500 text-white font-bold px-4 py-2 rounded-lg active:scale-95"
             >
-              Save & Earn
+              Save +{Math.floor(saveAmount / 5)}💧
             </button>
           </div>
-          <p className="text-white/40 text-xs mt-2 text-center">Save ${savingsAmount} → Get {Math.floor(savingsAmount / 2)} carrots</p>
         </div>
       </div>
 
-      {/* Win modal */}
-      {showWinModal && lastWin && (
-        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowWinModal(false)}>
-          <div className="bg-white rounded-2xl p-6 text-center animate-bounce">
-            {jackpot && <p className="text-3xl font-black text-[#FFD700] mb-2">JACKPOT!</p>}
-            <p className="text-xl font-bold text-[#333] mb-4">You won!</p>
-            <div className="flex justify-center mb-4">
-              {(() => {
-                const Icon = REWARD_ICONS[lastWin.icon];
-                return <Icon className="w-20 h-20" />;
-              })()}
-            </div>
-            <p className="text-2xl font-black text-[#FF8C42]">+{lastWin.winValue} 🥕</p>
-            <p className="text-sm text-gray-500 mt-2">Tap anywhere to continue</p>
-          </div>
-        </div>
-      )}
-
-      {/* Inventory modal */}
-      {showInventory && (
-        <div className="absolute inset-0 bg-black/80 z-50" onClick={() => setShowInventory(false)}>
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      {/* Seed Shop Modal */}
+      {showShop && (
+        <div className="absolute inset-0 bg-black/60 z-50 flex items-end" onClick={() => setShowShop(false)}>
+          <div className="w-full bg-white rounded-t-2xl p-4 max-h-[60vh]" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Your Collection</h2>
-              <button onClick={() => setShowInventory(false)}><X /></button>
+              <h2 className="text-xl font-bold">Plant Seeds</h2>
+              <button onClick={() => setShowShop(false)}><X className="w-6 h-6" /></button>
             </div>
-            {inventory.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">Spin to win items!</p>
-            ) : (
-              <div className="grid grid-cols-4 gap-2">
-                {inventory.map((item, i) => {
-                  const Icon = REWARD_ICONS[item.icon];
-                  return (
-                    <div key={i} className="bg-gray-100 rounded-lg p-2 flex flex-col items-center">
-                      <Icon className="w-10 h-10" />
-                      <span className="text-[10px] text-gray-600 mt-1 text-center">{item.name}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(PLANT_CONFIG).map(([type, config]) => (
+                <button
+                  key={type}
+                  onClick={() => plantSeed(type as keyof typeof PLANT_CONFIG)}
+                  disabled={carrots < 3 && !isAdmin}
+                  className="bg-gradient-to-br from-green-50 to-amber-50 border-2 border-green-200 rounded-xl p-4 flex flex-col items-center disabled:opacity-50"
+                >
+                  <div className="w-16 h-16 mb-2">
+                    {type === 'carrot' && <div className="w-full h-full bg-orange-400 rounded-full" />}
+                    {type === 'tomato' && <div className="w-full h-full bg-red-400 rounded-full" />}
+                    {type === 'sunflower' && <div className="w-full h-full bg-yellow-400 rounded-full" />}
+                    {type === 'rose' && <div className="w-full h-full bg-pink-400 rounded-full" />}
+                  </div>
+                  <p className="font-bold text-gray-800">{config.name}</p>
+                  <p className="text-xs text-gray-500">Sells for {config.value}🪙</p>
+                  <p className="text-xs text-orange-600 font-bold">3 💧 to plant</p>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
-
-      {/* Bottom nav */}
-      <div className="flex justify-center gap-4 pb-6 pt-2">
-        <button onClick={() => {}} className="px-4 py-2 bg-white/10 rounded-full text-white text-sm">Spin</button>
-        <button onClick={() => setShowInventory(true)} className="px-4 py-2 bg-white/10 rounded-full text-white text-sm">Collection</button>
-        <button onClick={handleSignOut} className="px-4 py-2 bg-white/10 rounded-full text-white text-sm">Logout</button>
-      </div>
     </div>
   );
 }
