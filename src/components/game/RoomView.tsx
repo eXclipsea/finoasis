@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Settings, X, Sparkles, Trash2, ChevronLeft } from 'lucide-react';
+import { X, Trash2, ChevronLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { 
@@ -69,6 +69,160 @@ interface Room {
   position: { x: number; y: number };
 }
 
+// Hand-drawn organic blob shape for islands
+const IslandBlob = ({ color, strokeColor = '#8B7355' }: { color: string; strokeColor?: string }) => (
+  <svg viewBox="0 0 200 120" className="w-full h-full">
+    <defs>
+      <filter id="sketchy">
+        <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
+      </filter>
+    </defs>
+    {/* Main island blob - wobbly organic shape */}
+    <path
+      d="M30 60 Q20 30 50 20 Q80 10 110 25 Q150 15 170 45 Q190 70 170 90 Q150 110 110 105 Q70 115 40 95 Q15 85 30 60"
+      fill={color}
+      stroke={strokeColor}
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      filter="url(#sketchy)"
+    />
+    {/* Shadow underneath */}
+    <ellipse
+      cx="100"
+      cy="105"
+      rx="75"
+      ry="12"
+      fill="rgba(0,0,0,0.15)"
+      filter="url(#sketchy)"
+    />
+    {/* Little grass tufts */}
+    <path d="M60 35 Q55 25 50 30" stroke="#7A9E7A" strokeWidth="2" fill="none" strokeLinecap="round" />
+    <path d="M140 40 Q145 30 150 35" stroke="#7A9E7A" strokeWidth="2" fill="none" strokeLinecap="round" />
+    <path d="M100 20 Q105 10 110 18" stroke="#7A9E7A" strokeWidth="2" fill="none" strokeLinecap="round" />
+  </svg>
+);
+
+// Hand-drawn cloud
+const CloudBlob = () => (
+  <svg viewBox="0 0 120 60" className="w-full h-full opacity-60">
+    <path
+      d="M20 40 Q10 30 20 20 Q30 10 50 15 Q70 5 90 15 Q110 20 110 35 Q115 50 95 55 Q75 60 50 55 Q25 60 15 50 Q10 45 20 40"
+      fill="white"
+      stroke="none"
+    />
+  </svg>
+);
+
+// Sketchy hand-drawn button
+const SketchyButton = ({ 
+  children, 
+  onClick, 
+  active = false,
+  className = ''
+}: { 
+  children: React.ReactNode; 
+  onClick: () => void; 
+  active?: boolean;
+  className?: string;
+}) => {
+  const baseColor = active ? '#C4A574' : '#E8D4B8';
+  const strokeColor = '#8B7355';
+  
+  return (
+    <button onClick={onClick} className={`relative w-16 h-16 ${className}`}>
+      <svg viewBox="0 0 70 70" className="w-full h-full absolute inset-0">
+        {/* Wobbly button shape */}
+        <path
+          d="M10 15 Q8 8 15 8 L55 8 Q62 8 60 15 L58 55 Q60 62 52 62 L18 62 Q10 62 12 55 Z"
+          fill={baseColor}
+          stroke={strokeColor}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Highlight line */}
+        <path
+          d="M15 12 L55 12"
+          stroke="rgba(255,255,255,0.4)"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        {children}
+      </div>
+    </button>
+  );
+};
+
+// Hand-drawn label pill
+const LabelPill = ({ children }: { children: React.ReactNode }) => (
+  <div className="relative">
+    <svg viewBox="0 0 100 40" className="w-full h-10 absolute inset-0">
+      <rect
+        x="5"
+        y="5"
+        width="90"
+        height="30"
+        rx="15"
+        ry="15"
+        fill="white"
+        stroke="#8B7355"
+        strokeWidth="2"
+      />
+    </svg>
+    <div className="relative px-6 py-2 text-center">
+      <span className="text-xs font-bold text-[#5D4E37]">{children}</span>
+    </div>
+  </div>
+);
+
+// Potato floating animation
+const FloatingPotato = ({ outfit }: { outfit: string[] }) => (
+  <svg viewBox="0 0 100 120" className="w-24 h-28 animate-bounce" style={{ animationDuration: '2.5s' }}>
+    <defs>
+      <radialGradient id="potatoBody" cx="50%" cy="40%" r="50%">
+        <stop offset="0%" stopColor="#E8D4B8" />
+        <stop offset="100%" stopColor="#C4A574" />
+      </radialGradient>
+    </defs>
+    {/* Body - organic potato shape */}
+    <path
+      d="M30 50 Q20 30 35 20 Q50 10 65 20 Q80 30 75 50 Q85 70 70 85 Q50 100 30 85 Q15 70 30 50"
+      fill="url(#potatoBody)"
+      stroke="#8B7355"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Eyes */}
+    <ellipse cx="42" cy="45" rx="4" ry="5" fill="#3D2914" />
+    <ellipse cx="58" cy="45" rx="4" ry="5" fill="#3D2914" />
+    <circle cx="43" cy="43" r="1.5" fill="white" />
+    <circle cx="59" cy="43" r="1.5" fill="white" />
+    {/* Smile */}
+    <path
+      d="M45 60 Q50 65 55 60"
+      stroke="#3D2914"
+      strokeWidth="2"
+      fill="none"
+      strokeLinecap="round"
+    />
+    {/* Blush */}
+    <ellipse cx="35" cy="55" rx="5" ry="3" fill="#FFB6C1" opacity="0.6" />
+    <ellipse cx="65" cy="55" rx="5" ry="3" fill="#FFB6C1" opacity="0.6" />
+    {/* Leaf on top */}
+    <path
+      d="M50 15 Q45 5 50 8 Q55 5 50 15"
+      fill="#7A9E7A"
+      stroke="#5A7E5A"
+      strokeWidth="1.5"
+    />
+  </svg>
+);
+
 // ========== ISLAND VIEW ==========
 function IslandView({ 
   rooms, 
@@ -84,92 +238,83 @@ function IslandView({
   onSettings: () => void;
 }) {
   return (
-    <div className="flex flex-col h-screen" style={{ background: 'linear-gradient(180deg, #87CEEB 0%, #B8D4E8 50%, #D4E8D4 100%)' }}>
-      {/* Clouds */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 left-10 w-32 h-12 bg-white/20 rounded-full blur-xl" />
-        <div className="absolute top-20 right-20 w-48 h-16 bg-white/15 rounded-full blur-xl" />
-        <div className="absolute top-5 left-1/2 w-40 h-14 bg-white/10 rounded-full blur-xl" />
+    <div className="flex flex-col h-screen overflow-hidden" style={{ background: 'linear-gradient(180deg, #A8D8EA 0%, #C5E4F3 50%, #E8F4F8 100%)' }}>
+      {/* Clouds - flat 2D */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-8 left-10 w-32 h-16">
+          <CloudBlob />
+        </div>
+        <div className="absolute top-16 right-16 w-40 h-20">
+          <CloudBlob />
+        </div>
+        <div className="absolute top-4 left-1/2 w-28 h-14">
+          <CloudBlob />
+        </div>
+        <div className="absolute top-32 left-1/4 w-24 h-12 opacity-40">
+          <CloudBlob />
+        </div>
       </div>
 
-      {/* Top bar */}
-      <div className="relative z-10 flex items-center justify-between px-4 py-3">
-        <div className="bg-white/90 px-3 py-1.5 rounded-full shadow-sm">
-          <span className="font-bold text-[#6B4423] text-sm">Beanie&apos;s Home</span>
+      {/* Top bar - flat 2D */}
+      <div className="relative z-10 flex items-center justify-between px-4 py-4">
+        <div className="flex items-center gap-2 bg-white/90 px-4 py-2 rounded-2xl border-2 border-[#8B7355]">
+          <span className="font-bold text-[#5D4E37] text-sm">Beanie&apos;s Home</span>
         </div>
-        <div className="flex items-center gap-1.5 bg-white/90 px-3 py-1.5 rounded-full shadow-sm">
+        <div className="flex items-center gap-2 bg-white/90 px-4 py-2 rounded-2xl border-2 border-[#FF8C42]">
           <IsometricCarrot className="w-4 h-5" />
           <span className="font-bold text-[#FF8C42] text-sm">{carrots}</span>
         </div>
       </div>
 
-      {/* Floating rooms */}
+      {/* Floating islands - flat 2D organic shapes */}
       <div className="flex-1 relative">
-        {rooms.map((room) => (
-          <button
-            key={room.id}
-            onClick={() => onEnterRoom(room.id)}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 group"
-            style={{
-              left: `${room.position.x}%`,
-              top: `${room.position.y}%`,
-            }}
-          >
-            {/* Room preview */}
-            <div 
-              className="w-28 h-28 transition-transform group-hover:scale-105"
-              style={{
-                transform: 'rotateX(60deg) rotateZ(-45deg)',
-                transformStyle: 'preserve-3d',
-              }}
-            >
-              {/* Floor */}
-              <div 
-                className="absolute inset-0 rounded-lg shadow-xl"
-                style={{ backgroundColor: room.floorColor }}
-              />
-              {/* Wall */}
-              <div 
-                className="absolute -top-1/3 left-0 right-0 h-1/3 rounded-t-lg"
-                style={{ backgroundColor: room.wallColor }}
-              />
-              {/* Side wall */}
-              <div 
-                className="absolute top-0 -right-1/3 w-1/3 h-full rounded-r-lg"
-                style={{ 
-                  backgroundColor: room.wallColor,
-                  filter: 'brightness(0.85)',
-                  transform: 'rotateY(-90deg)',
-                  transformOrigin: 'left'
-                }}
-              />
-            </div>
-            
-            {/* Label */}
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white px-3 py-1 rounded-full shadow-md whitespace-nowrap">
-              <span className="text-xs font-bold text-[#6B4423]">{room.name}</span>
-            </div>
-          </button>
-        ))}
-
-        {/* Beanie floating */}
-        <div 
-          className="absolute left-1/2 top-[70%] -translate-x-1/2 -translate-y-1/2"
+        {/* Bedroom - top left */}
+        <button
+          onClick={() => onEnterRoom('bedroom')}
+          className="absolute left-[10%] top-[20%] w-40 h-24 group"
         >
-          <div className="w-16 h-20 animate-bounce" style={{ animationDuration: '3s' }}>
-            <IsometricPotato outfit={outfit} />
+          <IslandBlob color="#E8D4B8" />
+          <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+            <LabelPill>Bedroom</LabelPill>
           </div>
+        </button>
+
+        {/* Kitchen - top right */}
+        <button
+          onClick={() => onEnterRoom('kitchen')}
+          className="absolute right-[10%] top-[20%] w-40 h-24 group"
+        >
+          <IslandBlob color="#FFE4C4" />
+          <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+            <LabelPill>Kitchen</LabelPill>
+          </div>
+        </button>
+
+        {/* Living Room - center */}
+        <button
+          onClick={() => onEnterRoom('living-room')}
+          className="absolute left-1/2 top-[45%] -translate-x-1/2 w-44 h-28 group"
+        >
+          <IslandBlob color="#DEB887" />
+          <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+            <LabelPill>Living Room</LabelPill>
+          </div>
+        </button>
+
+        {/* Beanie floating - center bottom */}
+        <div className="absolute left-1/2 top-[75%] -translate-x-1/2 -translate-y-1/2 z-20">
+          <FloatingPotato outfit={outfit} />
         </div>
       </div>
 
-      {/* Settings button */}
-      <div className="pb-6 flex justify-center">
-        <button 
-          onClick={onSettings}
-          className="w-14 h-14 bg-[#D4B896] rounded-full flex items-center justify-center shadow-lg hover:bg-[#C4A574] transition-colors"
-        >
-          <Settings className="w-6 h-6 text-[#3D2914]" />
-        </button>
+      {/* Settings button - hand drawn */}
+      <div className="pb-8 flex justify-center">
+        <SketchyButton onClick={onSettings}>
+          <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="#5D4E37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 1v6m0 6v6m-9-9h6m6 0h6" />
+          </svg>
+        </SketchyButton>
       </div>
     </div>
   );
@@ -210,39 +355,39 @@ function RoomViewInner({
   };
 
   return (
-    <div className="flex flex-col h-screen" style={{ background: 'linear-gradient(180deg, #87CEEB 0%, #B8D4E8 30%, #E8D4B8 100%)' }}>
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={onBack} className="flex items-center gap-1 bg-white/90 px-3 py-1.5 rounded-full shadow-sm hover:bg-white">
-          <ChevronLeft className="w-4 h-4 text-[#6B4423]" />
-          <span className="font-bold text-[#6B4423] text-sm">Island</span>
+    <div className="flex flex-col h-screen" style={{ background: 'linear-gradient(180deg, #A8D8EA 0%, #C5E4F3 30%, #E8F4F8 100%)' }}>
+      {/* Top bar - flat 2D */}
+      <div className="flex items-center justify-between px-4 py-4 relative z-10">
+        <button onClick={onBack} className="flex items-center gap-1 bg-white/90 px-3 py-2 rounded-xl border-2 border-[#8B7355] hover:bg-white">
+          <ChevronLeft className="w-4 h-4 text-[#5D4E37]" />
+          <span className="font-bold text-[#5D4E37] text-sm">Back</span>
         </button>
-        <div className="bg-white/90 px-4 py-1.5 rounded-full shadow-sm">
-          <span className="font-bold text-[#6B4423]">{room.name}</span>
+        <div className="bg-white/90 px-6 py-2 rounded-2xl border-2 border-[#8B7355]">
+          <span className="font-bold text-[#5D4E37]">{room.name}</span>
         </div>
-        <div className="flex items-center gap-1.5 bg-white/90 px-3 py-1.5 rounded-full shadow-sm border border-[#FF8C42]">
+        <div className="flex items-center gap-1.5 bg-white/90 px-3 py-2 rounded-xl border-2 border-[#FF8C42]">
           <IsometricCarrot className="w-4 h-5" />
           <span className="font-bold text-[#FF8C42]">{carrots}</span>
         </div>
       </div>
 
-      {/* Room */}
+      {/* Room - THIS IS THE ONLY 2.5D ELEMENT */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div 
           className="relative"
           style={{
-            width: 'min(80vw, 400px)',
-            height: 'min(80vw, 400px)',
+            width: 'min(85vw, 420px)',
+            height: 'min(85vw, 420px)',
             transform: 'rotateX(60deg) rotateZ(-45deg)',
             transformStyle: 'preserve-3d'
           }}
         >
           {/* Floor */}
           <div 
-            className="absolute inset-0 shadow-2xl"
+            className="absolute inset-0"
             style={{ 
               backgroundColor: room.floorColor,
-              boxShadow: '0 30px 60px rgba(0,0,0,0.3)'
+              boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
             }}
           >
             {/* Grid */}
@@ -261,7 +406,7 @@ function RoomViewInner({
                     top: `${y * TILE_SIZE}%`,
                     width: `${TILE_SIZE}%`,
                     height: `${TILE_SIZE}%`,
-                    border: '1px solid rgba(0,0,0,0.03)'
+                    border: '1px solid rgba(0,0,0,0.05)'
                   }}
                   onClick={() => {
                     if (selectedItem && !isOccupied) {
@@ -341,14 +486,14 @@ function RoomViewInner({
         </div>
       </div>
 
-      {/* Side panel */}
+      {/* Side panel - flat 2D */}
       {activeTab && (
-        <div className="absolute top-16 right-2 w-64 bg-white rounded-xl border-2 border-[#C4A574] shadow-xl z-20 max-h-[55vh] overflow-y-auto">
+        <div className="absolute top-20 right-2 w-64 bg-white rounded-2xl border-2 border-[#8B7355] shadow-xl z-20 max-h-[55vh] overflow-y-auto">
           <div className="p-3">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-[#6B4423]">{activeTab === 'shop' ? '🥕 Shop' : '🎨 Decorate'}</h3>
+              <h3 className="font-bold text-[#5D4E37]">{activeTab === 'shop' ? '🥕 Shop' : '🎨 Decorate'}</h3>
               <button onClick={() => { setActiveTab(null); setSelectedItem(null); }}>
-                <X className="w-5 h-5 text-[#6B4423]" />
+                <X className="w-5 h-5 text-[#5D4E37]" />
               </button>
             </div>
 
@@ -359,10 +504,10 @@ function RoomViewInner({
                     key={item.id}
                     onClick={() => handleBuy(item.id, item.category, item.price)}
                     disabled={!isAdmin && carrots < item.price}
-                    className="bg-[#F5EDE4] rounded-lg p-2 disabled:opacity-50"
+                    className="bg-[#F5EDE4] rounded-xl p-2 border border-[#C4A574] disabled:opacity-50"
                   >
                     <FurnitureItem type={item.id} className="w-full h-8" />
-                    <div className="text-xs text-[#6B4423] font-bold">{item.price}🥕</div>
+                    <div className="text-xs text-[#5D4E37] font-bold text-center mt-1">{item.price}🥕</div>
                   </button>
                 ))}
               </div>
@@ -378,7 +523,7 @@ function RoomViewInner({
                         <button
                           key={item.uniqueId}
                           onClick={() => setSelectedItem(selectedItem === item.uniqueId ? null : item.uniqueId)}
-                          className={`p-2 rounded-lg border-2 ${selectedItem === item.uniqueId ? 'border-[#FF8C42] bg-[#FF8C42]/20' : 'border-[#E8D4B8]'}`}
+                          className={`p-2 rounded-xl border-2 ${selectedItem === item.uniqueId ? 'border-[#FF8C42] bg-[#FF8C42]/20' : 'border-[#C4A574] bg-white'}`}
                         >
                           <FurnitureItem type={item.type} className="w-full h-8" />
                         </button>
@@ -389,10 +534,10 @@ function RoomViewInner({
                 
                 {placedItems.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-xs text-[#8B7355] mb-1">Placed items:</p>
+                    <p className="text-xs text-[#8B7355] mb-1">Placed:</p>
                     {placedItems.map((item: PlacedItem) => (
-                      <div key={item.uniqueId} className="flex items-center justify-between bg-[#F5EDE4] p-2 rounded mb-1">
-                        <span className="text-xs text-[#6B4423]">{item.type}</span>
+                      <div key={item.uniqueId} className="flex items-center justify-between bg-[#F5EDE4] p-2 rounded-lg mb-1 border border-[#C4A574]">
+                        <span className="text-xs text-[#5D4E37]">{item.type}</span>
                         <button onClick={() => handleDelete(item.uniqueId)}><Trash2 className="w-4 h-4 text-red-500" /></button>
                       </div>
                     ))}
@@ -401,26 +546,26 @@ function RoomViewInner({
 
                 <div className="space-y-2">
                   <div>
-                    <p className="text-xs font-bold text-[#6B4423]">Floor</p>
+                    <p className="text-xs font-bold text-[#5D4E37]">Floor</p>
                     <div className="flex gap-1">
                       {FLOOR_COLORS.map(c => (
                         <button
                           key={c.id}
                           onClick={() => setFloorColor(c.color)}
-                          className="w-6 h-6 rounded border border-gray-300"
+                          className="w-6 h-6 rounded-lg border border-[#8B7355]"
                           style={{ backgroundColor: c.color }}
                         />
                       ))}
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#6B4423]">Wall</p>
+                    <p className="text-xs font-bold text-[#5D4E37]">Wall</p>
                     <div className="flex gap-1">
                       {WALL_COLORS.map(c => (
                         <button
                           key={c.id}
                           onClick={() => setWallColor(c.color)}
-                          className="w-6 h-6 rounded border border-gray-300"
+                          className="w-6 h-6 rounded-lg border border-[#8B7355]"
                           style={{ backgroundColor: c.color }}
                         />
                       ))}
@@ -433,29 +578,31 @@ function RoomViewInner({
         </div>
       )}
 
-      {/* Bottom 3 buttons */}
-      <div className="pb-4 pt-2 flex justify-center gap-6">
-        <button 
+      {/* Bottom 3 sketchy buttons - FLAT 2D */}
+      <div className="pb-6 pt-2 flex justify-center gap-4">
+        <SketchyButton 
           onClick={() => setActiveTab(activeTab === 'decorate' ? null : 'decorate')}
-          className={`w-14 h-14 rounded-full flex flex-col items-center justify-center shadow-lg transition-colors ${activeTab === 'decorate' ? 'bg-[#C4A574]' : 'bg-[#D4B896] hover:bg-[#C4A574]'}`}
+          active={activeTab === 'decorate'}
         >
-          <span className="text-xl">🎨</span>
-          <span className="text-[10px] text-[#3D2914] font-bold">Decorate</span>
-        </button>
-        <button 
+          <span className="text-2xl">🎨</span>
+          <span className="text-[9px] text-[#5D4E37] font-bold mt-0.5">Decorate</span>
+        </SketchyButton>
+        <SketchyButton 
           onClick={() => setActiveTab(activeTab === 'shop' ? null : 'shop')}
-          className={`w-14 h-14 rounded-full flex flex-col items-center justify-center shadow-lg transition-colors ${activeTab === 'shop' ? 'bg-[#C4A574]' : 'bg-[#D4B896] hover:bg-[#C4A574]'}`}
+          active={activeTab === 'shop'}
         >
-          <IsometricCarrot className="w-6 h-7" />
-          <span className="text-[10px] text-[#3D2914] font-bold">Shop</span>
-        </button>
-        <button 
+          <IsometricCarrot className="w-7 h-8" />
+          <span className="text-[9px] text-[#5D4E37] font-bold mt-0.5">Shop</span>
+        </SketchyButton>
+        <SketchyButton 
           onClick={() => { setOutfit([]); handleSignOut(); }}
-          className="w-14 h-14 rounded-full flex flex-col items-center justify-center shadow-lg bg-[#D4B896] hover:bg-[#C4A574]"
         >
-          <Settings className="w-5 h-5 text-[#3D2914]" />
-          <span className="text-[10px] text-[#3D2914] font-bold">Settings</span>
-        </button>
+          <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="#5D4E37" strokeWidth="2" strokeLinecap="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 1v6m0 6v6m-9-9h6m6 0h6" />
+          </svg>
+          <span className="text-[9px] text-[#5D4E37] font-bold mt-0.5">Settings</span>
+        </SketchyButton>
       </div>
     </div>
   );
@@ -585,33 +732,33 @@ export default function RoomViewMain({ yardId, carrots: initialCarrots = 0, pet,
     router.push('/');
   };
 
-  // Settings panel for island view
+  // Settings panel
   if (showSettings && !currentRoom) {
     return (
-      <div className="flex flex-col h-screen" style={{ background: 'linear-gradient(180deg, #87CEEB 0%, #B8D4E8 50%, #D4E8D4 100%)' }}>
-        <div className="flex items-center justify-between px-4 py-3">
-          <button onClick={() => setShowSettings(false)} className="bg-white/90 px-3 py-1.5 rounded-full">
-            <span className="font-bold text-[#6B4423]">Back</span>
+      <div className="flex flex-col h-screen" style={{ background: 'linear-gradient(180deg, #A8D8EA 0%, #C5E4F3 50%, #E8F4F8 100%)' }}>
+        <div className="flex items-center justify-between px-4 py-4">
+          <button onClick={() => setShowSettings(false)} className="bg-white/90 px-4 py-2 rounded-xl border-2 border-[#8B7355]">
+            <span className="font-bold text-[#5D4E37]">Back</span>
           </button>
-          <span className="font-bold text-[#6B4423]">Settings</span>
+          <span className="font-bold text-[#5D4E37]">Settings</span>
           <div className="w-16" />
         </div>
         
         <div className="flex-1 p-4">
-          <div className="bg-white rounded-xl p-4 max-w-sm mx-auto">
+          <div className="bg-white rounded-2xl p-4 max-w-sm mx-auto border-2 border-[#8B7355]">
             <p className="text-sm text-[#8B7355] mb-2">{user?.email}</p>
             {isAdmin && <span className="text-xs bg-[#FF8C42]/20 text-[#FF8C42] px-2 py-1 rounded-full">Admin</span>}
             
             <div className="mt-4">
-              <p className="text-sm font-bold text-[#6B4423] mb-2">Outfit</p>
+              <p className="text-sm font-bold text-[#5D4E37] mb-2">Outfit</p>
               <div className="flex gap-2">
-                <button onClick={() => setOutfit(prev => prev.includes('hat') ? prev.filter(o => o !== 'hat') : [...prev, 'hat'])} className={`p-2 rounded-lg ${outfit.includes('hat') ? 'bg-[#FF8C42]' : 'bg-[#F5EDE4]'}`}>🥕</button>
-                <button onClick={() => setOutfit(prev => prev.includes('glasses') ? prev.filter(o => o !== 'glasses') : [...prev, 'glasses'])} className={`p-2 rounded-lg ${outfit.includes('glasses') ? 'bg-[#FF8C42]' : 'bg-[#F5EDE4]'}`}>👓</button>
-                <button onClick={() => setOutfit(prev => prev.includes('bow') ? prev.filter(o => o !== 'bow') : [...prev, 'bow'])} className={`p-2 rounded-lg ${outfit.includes('bow') ? 'bg-[#FF8C42]' : 'bg-[#F5EDE4]'}`}>🎀</button>
+                <button onClick={() => setOutfit(prev => prev.includes('hat') ? prev.filter(o => o !== 'hat') : [...prev, 'hat'])} className={`p-2 rounded-lg border border-[#8B7355] ${outfit.includes('hat') ? 'bg-[#FF8C42]' : 'bg-[#F5EDE4]'}`}>🥕</button>
+                <button onClick={() => setOutfit(prev => prev.includes('glasses') ? prev.filter(o => o !== 'glasses') : [...prev, 'glasses'])} className={`p-2 rounded-lg border border-[#8B7355] ${outfit.includes('glasses') ? 'bg-[#FF8C42]' : 'bg-[#F5EDE4]'}`}>👓</button>
+                <button onClick={() => setOutfit(prev => prev.includes('bow') ? prev.filter(o => o !== 'bow') : [...prev, 'bow'])} className={`p-2 rounded-lg border border-[#8B7355] ${outfit.includes('bow') ? 'bg-[#FF8C42]' : 'bg-[#F5EDE4]'}`}>🎀</button>
               </div>
             </div>
             
-            <button onClick={handleSignOut} className="w-full mt-4 bg-[#A67B5B] text-white py-2 rounded-xl font-bold">
+            <button onClick={handleSignOut} className="w-full mt-4 bg-[#A67B5B] text-white py-2 rounded-xl font-bold border-2 border-[#5D4E37]">
               Sign Out
             </button>
           </div>
@@ -620,7 +767,6 @@ export default function RoomViewMain({ yardId, carrots: initialCarrots = 0, pet,
     );
   }
 
-  // Show island or room view
   if (!currentRoom) {
     return (
       <IslandView 
