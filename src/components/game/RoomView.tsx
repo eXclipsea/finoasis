@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Settings, X, Sparkles, Trash2 } from 'lucide-react';
+import { Settings, X, Sparkles, Trash2, ChevronLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { 
@@ -19,19 +19,12 @@ import {
 interface RoomViewProps {
   yardId: string;
   carrots: number;
-  pet: {
-    id: string;
-    name: string;
-    stage: string;
-    happiness: number;
-    health: number;
-  } | null;
+  pet: any;
   profile: any;
   bankAccounts: any[];
   user: any;
 }
 
-// Single 6x6 grid
 const GRID_SIZE = 6;
 const TILE_SIZE = 100 / GRID_SIZE;
 
@@ -56,7 +49,6 @@ const FURNITURE_SIZES: Record<string, { width: number; height: number }> = {
   'window': { width: 2, height: 1 },
   'hanging-plant': { width: 1, height: 2 },
   'vines': { width: 2, height: 2 },
-  'door': { width: 1, height: 1 },
 };
 
 interface PlacedItem {
@@ -67,193 +59,224 @@ interface PlacedItem {
   gridY: number;
 }
 
-// Simple toolbar button
-const ToolbarButton = ({ 
-  icon, 
-  label, 
-  active, 
-  onClick, 
-  badge 
+interface Room {
+  id: string;
+  name: string;
+  floorColor: string;
+  wallColor: string;
+  items: PlacedItem[];
+  grid: (string | null)[][];
+  position: { x: number; y: number };
+}
+
+// ========== ISLAND VIEW ==========
+function IslandView({ 
+  rooms, 
+  onEnterRoom, 
+  carrots, 
+  outfit,
+  onSettings 
 }: { 
-  icon: React.ReactNode; 
-  label: string; 
-  active?: boolean; 
-  onClick: () => void;
-  badge?: number;
-}) => (
-  <button
-    onClick={onClick}
-    className={`flex flex-col items-center gap-1 ${active ? 'scale-110' : ''}`}
-  >
-    <div className={`w-16 h-14 flex items-center justify-center transition-all ${
-      active 
-        ? 'bg-[#C4A574] text-white' 
-        : 'bg-[#D4B896] text-[#3D2914] hover:bg-[#C4A574]'
-    }`}
-    style={{
-      borderRadius: '50% 50% 45% 45% / 60% 60% 40% 40%',
-      boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
-    }}>
-      {icon}
+  rooms: Room[]; 
+  onEnterRoom: (id: string) => void;
+  carrots: number;
+  outfit: string[];
+  onSettings: () => void;
+}) {
+  return (
+    <div className="flex flex-col h-screen" style={{ background: 'linear-gradient(180deg, #87CEEB 0%, #B8D4E8 50%, #D4E8D4 100%)' }}>
+      {/* Clouds */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-32 h-12 bg-white/20 rounded-full blur-xl" />
+        <div className="absolute top-20 right-20 w-48 h-16 bg-white/15 rounded-full blur-xl" />
+        <div className="absolute top-5 left-1/2 w-40 h-14 bg-white/10 rounded-full blur-xl" />
+      </div>
+
+      {/* Top bar */}
+      <div className="relative z-10 flex items-center justify-between px-4 py-3">
+        <div className="bg-white/90 px-3 py-1.5 rounded-full shadow-sm">
+          <span className="font-bold text-[#6B4423] text-sm">Beanie&apos;s Home</span>
+        </div>
+        <div className="flex items-center gap-1.5 bg-white/90 px-3 py-1.5 rounded-full shadow-sm">
+          <IsometricCarrot className="w-4 h-5" />
+          <span className="font-bold text-[#FF8C42] text-sm">{carrots}</span>
+        </div>
+      </div>
+
+      {/* Floating rooms */}
+      <div className="flex-1 relative">
+        {rooms.map((room) => (
+          <button
+            key={room.id}
+            onClick={() => onEnterRoom(room.id)}
+            className="absolute transform -translate-x-1/2 -translate-y-1/2 group"
+            style={{
+              left: `${room.position.x}%`,
+              top: `${room.position.y}%`,
+            }}
+          >
+            {/* Room preview */}
+            <div 
+              className="w-28 h-28 transition-transform group-hover:scale-105"
+              style={{
+                transform: 'rotateX(60deg) rotateZ(-45deg)',
+                transformStyle: 'preserve-3d',
+              }}
+            >
+              {/* Floor */}
+              <div 
+                className="absolute inset-0 rounded-lg shadow-xl"
+                style={{ backgroundColor: room.floorColor }}
+              />
+              {/* Wall */}
+              <div 
+                className="absolute -top-1/3 left-0 right-0 h-1/3 rounded-t-lg"
+                style={{ backgroundColor: room.wallColor }}
+              />
+              {/* Side wall */}
+              <div 
+                className="absolute top-0 -right-1/3 w-1/3 h-full rounded-r-lg"
+                style={{ 
+                  backgroundColor: room.wallColor,
+                  filter: 'brightness(0.85)',
+                  transform: 'rotateY(-90deg)',
+                  transformOrigin: 'left'
+                }}
+              />
+            </div>
+            
+            {/* Label */}
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white px-3 py-1 rounded-full shadow-md whitespace-nowrap">
+              <span className="text-xs font-bold text-[#6B4423]">{room.name}</span>
+            </div>
+          </button>
+        ))}
+
+        {/* Beanie floating */}
+        <div 
+          className="absolute left-1/2 top-[70%] -translate-x-1/2 -translate-y-1/2"
+        >
+          <div className="w-16 h-20 animate-bounce" style={{ animationDuration: '3s' }}>
+            <IsometricPotato outfit={outfit} />
+          </div>
+        </div>
+      </div>
+
+      {/* Settings button */}
+      <div className="pb-6 flex justify-center">
+        <button 
+          onClick={onSettings}
+          className="w-14 h-14 bg-[#D4B896] rounded-full flex items-center justify-center shadow-lg hover:bg-[#C4A574] transition-colors"
+        >
+          <Settings className="w-6 h-6 text-[#3D2914]" />
+        </button>
+      </div>
     </div>
-    <span className={`text-xs font-bold ${active ? 'text-[#6B4423]' : 'text-[#8B7355]'}`}>
-      {label}
-    </span>
-    {badge !== undefined && badge > 0 && (
-      <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF8C42] text-white text-xs rounded-full flex items-center justify-center">
-        {badge}
-      </span>
-    )}
-  </button>
-);
-
-export default function RoomView({ 
-  yardId, 
-  carrots: initialCarrots = 0, 
-  pet, 
-  profile, 
-  bankAccounts = [],
-  user
-}: RoomViewProps) {
-  const router = useRouter();
-  const supabase = createClient();
-  
-  const isAdmin = user?.email === '2landonl10@gmail.com';
-  const [carrots, setCarrots] = useState(isAdmin ? 999999 : initialCarrots);
-  
-  // ONE room only
-  const [floorColor, setFloorColor] = useState('#DEB887');
-  const [wallColor, setWallColor] = useState('#E8D4B8');
-  const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
-  const [grid, setGrid] = useState<(string | null)[][]>(
-    Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null))
   );
-  
-  // UI State
-  const [activeTab, setActiveTab] = useState<'shop' | 'decorate' | 'settings' | null>(null);
-  const [inventory, setInventory] = useState<{ id: string; uniqueId: string; type: string; category: string }[]>([]);
-  const [selectedItem, setSelectedItem] = useState<string | null>(null);
-  const [outfit, setOutfit] = useState<string[]>([]);
+}
 
-  const handleBuy = useCallback((itemId: string, category: string, price: number) => {
-    if (!isAdmin && carrots < price) return;
-    const newItem = { id: itemId, uniqueId: `${itemId}-${Date.now()}`, type: itemId, category };
-    setInventory(prev => [...prev, newItem]);
-    if (!isAdmin) setCarrots(prev => prev - price);
-    setActiveTab('decorate');
-    setSelectedItem(newItem.uniqueId);
-  }, [carrots, isAdmin]);
+// ========== ROOM VIEW ==========
+function RoomViewInner({
+  room,
+  onBack,
+  carrots,
+  inventory,
+  placedItems,
+  selectedItem,
+  setSelectedItem,
+  handleBuy,
+  handlePlace,
+  handleDelete,
+  setFloorColor,
+  setWallColor,
+  outfit,
+  setOutfit,
+  handleSignOut,
+  isAdmin,
+  user
+}: any) {
+  const [activeTab, setActiveTab] = useState<'shop' | 'decorate' | null>(null);
+  const allItems = [...FURNITURE_ITEMS, ...PLANT_ITEMS, ...DECOR_ITEMS];
 
-  const canPlace = (itemType: string, x: number, y: number): boolean => {
+  const canPlace = (itemType: string, x: number, y: number) => {
     const size = FURNITURE_SIZES[itemType] || { width: 1, height: 1 };
     if (x + size.width > GRID_SIZE || y + size.height > GRID_SIZE) return false;
     for (let gy = y; gy < y + size.height; gy++) {
       for (let gx = x; gx < x + size.width; gx++) {
-        if (grid[gy][gx] !== null) return false;
+        if (room.grid[gy][gx] !== null) return false;
       }
     }
     return true;
   };
 
-  const handlePlace = useCallback((itemId: string, x: number, y: number) => {
-    const item = inventory.find(i => i.uniqueId === itemId);
-    if (!item || !canPlace(item.type, x, y)) return;
-    
-    const size = FURNITURE_SIZES[item.type] || { width: 1, height: 1 };
-    const newGrid = grid.map(row => [...row]);
-    for (let gy = y; gy < y + size.height; gy++) {
-      for (let gx = x; gx < x + size.width; gx++) {
-        newGrid[gy][gx] = item.uniqueId;
-      }
-    }
-    
-    setGrid(newGrid);
-    setPlacedItems(prev => [...prev, { id: item.id, uniqueId: item.uniqueId, type: item.type, gridX: x, gridY: y }]);
-    setInventory(prev => prev.filter(i => i.uniqueId !== itemId));
-    setSelectedItem(null);
-  }, [inventory, grid]);
-
-  const handleDelete = useCallback((uniqueId: string) => {
-    const item = placedItems.find(i => i.uniqueId === uniqueId);
-    if (!item) return;
-    
-    const size = FURNITURE_SIZES[item.type] || { width: 1, height: 1 };
-    const newGrid = grid.map(row => [...row]);
-    for (let y = item.gridY; y < item.gridY + size.height; y++) {
-      for (let x = item.gridX; x < item.gridX + size.width; x++) {
-        if (newGrid[y] && newGrid[y][x] === uniqueId) newGrid[y][x] = null;
-      }
-    }
-    
-    setGrid(newGrid);
-    setPlacedItems(prev => prev.filter(i => i.uniqueId !== uniqueId));
-  }, [placedItems, grid]);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-  };
-
-  const allItems = [...FURNITURE_ITEMS, ...PLANT_ITEMS, ...DECOR_ITEMS];
-
   return (
-    <div className="flex flex-col h-screen overflow-hidden" style={{ background: 'linear-gradient(180deg, #87CEEB 0%, #B8D4E8 30%, #E8D4B8 100%)' }}>
-      
-      {/* Top bar - simple */}
+    <div className="flex flex-col h-screen" style={{ background: 'linear-gradient(180deg, #87CEEB 0%, #B8D4E8 30%, #E8D4B8 100%)' }}>
+      {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-3">
-        <div className="bg-white/80 px-4 py-2 rounded-full border-2 border-[#C4A574]">
-          <span className="font-bold text-[#6B4423]">Beanie&apos;s Room</span>
+        <button onClick={onBack} className="flex items-center gap-1 bg-white/90 px-3 py-1.5 rounded-full shadow-sm hover:bg-white">
+          <ChevronLeft className="w-4 h-4 text-[#6B4423]" />
+          <span className="font-bold text-[#6B4423] text-sm">Island</span>
+        </button>
+        <div className="bg-white/90 px-4 py-1.5 rounded-full shadow-sm">
+          <span className="font-bold text-[#6B4423]">{room.name}</span>
         </div>
-        <div className="flex items-center gap-2 bg-white/80 px-4 py-2 rounded-full border-2 border-[#FF8C42]">
-          <IsometricCarrot className="w-5 h-6" />
-          <span className="font-black text-[#FF8C42]">{carrots}</span>
+        <div className="flex items-center gap-1.5 bg-white/90 px-3 py-1.5 rounded-full shadow-sm border border-[#FF8C42]">
+          <IsometricCarrot className="w-4 h-5" />
+          <span className="font-bold text-[#FF8C42]">{carrots}</span>
         </div>
       </div>
 
-      {/* Room - centered */}
+      {/* Room */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div 
           className="relative"
           style={{
-            width: 'min(85vw, 450px)',
-            height: 'min(85vw, 450px)',
+            width: 'min(80vw, 400px)',
+            height: 'min(80vw, 400px)',
             transform: 'rotateX(60deg) rotateZ(-45deg)',
             transformStyle: 'preserve-3d'
           }}
         >
           {/* Floor */}
           <div 
-            className="absolute inset-0"
+            className="absolute inset-0 shadow-2xl"
             style={{ 
-              backgroundColor: floorColor,
-              boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+              backgroundColor: room.floorColor,
+              boxShadow: '0 30px 60px rgba(0,0,0,0.3)'
             }}
           >
-            {/* Grid tiles */}
+            {/* Grid */}
             {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, idx) => {
               const x = idx % GRID_SIZE;
               const y = Math.floor(idx / GRID_SIZE);
-              const isOccupied = grid[y][x] !== null;
-              const isHighlighted = selectedItem && !isOccupied;
+              const isOccupied = room.grid[y][x] !== null;
+              const isHighlighted = selectedItem && !isOccupied && canPlace(inventory.find((i: any) => i.uniqueId === selectedItem)?.type, x, y);
               
               return (
                 <button
                   key={idx}
-                  className={`absolute ${isOccupied ? 'bg-black/10' : isHighlighted ? 'bg-[#FF8C42]/40 animate-pulse' : 'hover:bg-white/20'}`}
+                  className={`absolute ${isOccupied ? '' : isHighlighted ? 'bg-[#FF8C42]/30' : 'hover:bg-white/10'}`}
                   style={{
                     left: `${x * TILE_SIZE}%`,
                     top: `${y * TILE_SIZE}%`,
                     width: `${TILE_SIZE}%`,
                     height: `${TILE_SIZE}%`,
-                    border: '1px solid rgba(0,0,0,0.05)'
+                    border: '1px solid rgba(0,0,0,0.03)'
                   }}
-                  onClick={() => selectedItem && !isOccupied && handlePlace(selectedItem, x, y)}
+                  onClick={() => {
+                    if (selectedItem && !isOccupied) {
+                      const item = inventory.find((i: any) => i.uniqueId === selectedItem);
+                      if (item && canPlace(item.type, x, y)) {
+                        handlePlace(selectedItem, x, y);
+                      }
+                    }
+                  }}
                 />
               );
             })}
 
-            {/* Placed items */}
-            {placedItems.map((item) => {
+            {/* Items */}
+            {placedItems.map((item: PlacedItem) => {
               const size = FURNITURE_SIZES[item.type] || { width: 1, height: 1 };
               return (
                 <div
@@ -266,35 +289,32 @@ export default function RoomView({
                     height: `${size.height * TILE_SIZE}%`,
                     transform: 'rotateZ(45deg) rotateX(-60deg)',
                   }}
-                  onClick={() => activeTab === 'decorate' && handleDelete(item.uniqueId)}
                 >
                   <FurnitureItem type={item.type} className="w-full h-full" />
                 </div>
               );
             })}
 
-            {/* Potato */}
+            {/* Characters */}
             <div
               className="absolute z-10"
               style={{
-                left: '40%',
-                top: '40%',
-                width: '25%',
-                height: '25%',
+                left: `${2.5 * TILE_SIZE}%`,
+                top: `${2.5 * TILE_SIZE}%`,
+                width: '20%',
+                height: '20%',
                 transform: 'rotateZ(45deg) rotateX(-60deg) translate(-50%, -50%)',
               }}
             >
               <IsometricPotato outfit={outfit} />
             </div>
-
-            {/* Dog */}
             <div
               className="absolute z-10"
               style={{
-                left: '65%',
-                top: '60%',
-                width: '20%',
-                height: '20%',
+                left: `${4.5 * TILE_SIZE}%`,
+                top: `${4.5 * TILE_SIZE}%`,
+                width: '15%',
+                height: '15%',
                 transform: 'rotateZ(45deg) rotateX(-60deg) translate(-50%, -50%)',
               }}
             >
@@ -306,18 +326,16 @@ export default function RoomView({
           <div 
             className="absolute -top-[25%] left-0 right-0 h-[25%] origin-bottom"
             style={{ 
-              backgroundColor: wallColor,
+              backgroundColor: room.wallColor,
               transform: 'rotateX(-90deg)',
-              transformOrigin: 'bottom'
             }}
           />
           <div 
             className="absolute top-0 -right-[25%] w-[25%] h-full origin-left"
             style={{ 
-              backgroundColor: wallColor,
+              backgroundColor: room.wallColor,
               filter: 'brightness(0.9)',
               transform: 'rotateY(90deg)',
-              transformOrigin: 'left'
             }}
           />
         </div>
@@ -325,15 +343,11 @@ export default function RoomView({
 
       {/* Side panel */}
       {activeTab && (
-        <div className="absolute top-20 right-4 w-72 bg-white rounded-2xl border-2 border-[#C4A574] shadow-xl z-20 max-h-[60vh] overflow-y-auto">
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-[#6B4423]">
-                {activeTab === 'shop' && '🥕 Shop'}
-                {activeTab === 'decorate' && '🎨 Decorate'}
-                {activeTab === 'settings' && '⚙️ Settings'}
-              </h3>
-              <button onClick={() => { setActiveTab(null); setSelectedItem(null); }} className="p-1 hover:bg-gray-100 rounded">
+        <div className="absolute top-16 right-2 w-64 bg-white rounded-xl border-2 border-[#C4A574] shadow-xl z-20 max-h-[55vh] overflow-y-auto">
+          <div className="p-3">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-bold text-[#6B4423]">{activeTab === 'shop' ? '🥕 Shop' : '🎨 Decorate'}</h3>
+              <button onClick={() => { setActiveTab(null); setSelectedItem(null); }}>
                 <X className="w-5 h-5 text-[#6B4423]" />
               </button>
             </div>
@@ -345,14 +359,10 @@ export default function RoomView({
                     key={item.id}
                     onClick={() => handleBuy(item.id, item.category, item.price)}
                     disabled={!isAdmin && carrots < item.price}
-                    className="bg-[#F5EDE4] hover:bg-[#E8D4B8] rounded-xl p-2 disabled:opacity-50"
+                    className="bg-[#F5EDE4] rounded-lg p-2 disabled:opacity-50"
                   >
-                    <FurnitureItem type={item.id} className="w-full h-10" />
-                    <div className="text-xs font-bold text-[#6B4423] mt-1">{item.name}</div>
-                    <div className="flex items-center justify-center gap-1">
-                      <IsometricCarrot className="w-3 h-4" />
-                      <span className="text-xs text-[#FF8C42] font-bold">{item.price}</span>
-                    </div>
+                    <FurnitureItem type={item.id} className="w-full h-8" />
+                    <div className="text-xs text-[#6B4423] font-bold">{item.price}🥕</div>
                   </button>
                 ))}
               </div>
@@ -360,118 +370,288 @@ export default function RoomView({
 
             {activeTab === 'decorate' && (
               <div>
-                {inventory.length === 0 ? (
-                  <p className="text-sm text-[#8B7355] text-center py-4">Buy items from the shop!</p>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    {inventory.map((item) => (
-                      <button
-                        key={item.uniqueId}
-                        onClick={() => setSelectedItem(selectedItem === item.uniqueId ? null : item.uniqueId)}
-                        className={`p-2 rounded-xl border-2 ${selectedItem === item.uniqueId ? 'border-[#FF8C42] bg-[#FF8C42]/20' : 'border-[#E8D4B8] bg-white'}`}
-                      >
-                        <FurnitureItem type={item.type} className="w-full h-8" />
-                      </button>
-                    ))}
-                  </div>
+                {inventory.length > 0 && (
+                  <>
+                    <p className="text-xs text-[#8B7355] mb-1">Tap item, then tap grid</p>
+                    <div className="grid grid-cols-3 gap-1 mb-3">
+                      {inventory.map((item: any) => (
+                        <button
+                          key={item.uniqueId}
+                          onClick={() => setSelectedItem(selectedItem === item.uniqueId ? null : item.uniqueId)}
+                          className={`p-2 rounded-lg border-2 ${selectedItem === item.uniqueId ? 'border-[#FF8C42] bg-[#FF8C42]/20' : 'border-[#E8D4B8]'}`}
+                        >
+                          <FurnitureItem type={item.type} className="w-full h-8" />
+                        </button>
+                      ))}
+                    </div>
+                  </>
                 )}
                 
                 {placedItems.length > 0 && (
-                  <div>
-                    <p className="text-xs text-[#8B7355] mb-2">Tap items in room to remove</p>
-                    <div className="space-y-1">
-                      {placedItems.map((item) => (
-                        <div key={item.uniqueId} className="flex items-center justify-between bg-[#F5EDE4] p-2 rounded-lg">
-                          <span className="text-sm text-[#6B4423]">{item.type}</span>
-                          <button onClick={() => handleDelete(item.uniqueId)} className="text-red-500">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="mb-3">
+                    <p className="text-xs text-[#8B7355] mb-1">Placed items:</p>
+                    {placedItems.map((item: PlacedItem) => (
+                      <div key={item.uniqueId} className="flex items-center justify-between bg-[#F5EDE4] p-2 rounded mb-1">
+                        <span className="text-xs text-[#6B4423]">{item.type}</span>
+                        <button onClick={() => handleDelete(item.uniqueId)}><Trash2 className="w-4 h-4 text-red-500" /></button>
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                <div className="mt-4 pt-4 border-t border-[#E8D4B8]">
-                  <p className="text-xs font-bold text-[#6B4423] mb-2">Floor Color</p>
-                  <div className="flex gap-2">
-                    {FLOOR_COLORS.map(c => (
-                      <button
-                        key={c.id}
-                        onClick={() => setFloorColor(c.color)}
-                        className={`w-8 h-8 rounded-lg border-2 ${floorColor === c.color ? 'border-[#6B4423]' : 'border-[#E8D4B8]'}`}
-                        style={{ backgroundColor: c.color }}
-                      />
-                    ))}
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-xs font-bold text-[#6B4423]">Floor</p>
+                    <div className="flex gap-1">
+                      {FLOOR_COLORS.map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => setFloorColor(c.color)}
+                          className="w-6 h-6 rounded border border-gray-300"
+                          style={{ backgroundColor: c.color }}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <p className="text-xs font-bold text-[#6B4423] mb-2 mt-3">Wall Color</p>
-                  <div className="flex gap-2">
-                    {WALL_COLORS.map(c => (
-                      <button
-                        key={c.id}
-                        onClick={() => setWallColor(c.color)}
-                        className={`w-8 h-8 rounded-lg border-2 ${wallColor === c.color ? 'border-[#6B4423]' : 'border-[#E8D4B8]'}`}
-                        style={{ backgroundColor: c.color }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'settings' && (
-              <div className="space-y-3">
-                <div className="bg-[#F5EDE4] rounded-xl p-3">
-                  <p className="text-xs text-[#8B7355]">{user?.email}</p>
-                  {isAdmin && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#FF8C42]/20 text-[#FF8C42] rounded-full text-xs">
-                      <Sparkles className="w-3 h-3" /> Admin
-                    </span>
-                  )}
-                </div>
-                
-                <div>
-                  <p className="text-xs font-bold text-[#6B4423] mb-2">Outfit</p>
-                  <div className="flex gap-2">
-                    <button onClick={() => setOutfit(prev => prev.includes('hat') ? prev.filter(o => o !== 'hat') : [...prev, 'hat'])} className={`p-2 rounded-lg ${outfit.includes('hat') ? 'bg-[#FF8C42] text-white' : 'bg-[#F5EDE4]'}`}>🥕</button>
-                    <button onClick={() => setOutfit(prev => prev.includes('glasses') ? prev.filter(o => o !== 'glasses') : [...prev, 'glasses'])} className={`p-2 rounded-lg ${outfit.includes('glasses') ? 'bg-[#FF8C42] text-white' : 'bg-[#F5EDE4]'}`}>👓</button>
-                    <button onClick={() => setOutfit(prev => prev.includes('bow') ? prev.filter(o => o !== 'bow') : [...prev, 'bow'])} className={`p-2 rounded-lg ${outfit.includes('bow') ? 'bg-[#FF8C42] text-white' : 'bg-[#F5EDE4]'}`}>🎀</button>
+                  <div>
+                    <p className="text-xs font-bold text-[#6B4423]">Wall</p>
+                    <div className="flex gap-1">
+                      {WALL_COLORS.map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => setWallColor(c.color)}
+                          className="w-6 h-6 rounded border border-gray-300"
+                          style={{ backgroundColor: c.color }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
-                
-                <button onClick={handleSignOut} className="w-full bg-[#A67B5B] text-white font-bold py-2 rounded-xl">
-                  Sign Out
-                </button>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Bottom toolbar - 3 buttons */}
-      <div className="pb-6 pt-2 flex justify-center">
-        <div className="flex items-center gap-8">
-          <ToolbarButton
-            icon={<span className="text-xl">🎨</span>}
-            label="Decorate"
-            active={activeTab === 'decorate'}
-            onClick={() => setActiveTab(activeTab === 'decorate' ? null : 'decorate')}
-            badge={inventory.length}
-          />
-          <ToolbarButton
-            icon={<IsometricCarrot className="w-7 h-8" />}
-            label="Shop"
-            active={activeTab === 'shop'}
-            onClick={() => setActiveTab(activeTab === 'shop' ? null : 'shop')}
-          />
-          <ToolbarButton
-            icon={<Settings className="w-6 h-6" />}
-            label="Settings"
-            active={activeTab === 'settings'}
-            onClick={() => setActiveTab(activeTab === 'settings' ? null : 'settings')}
-          />
-        </div>
+      {/* Bottom 3 buttons */}
+      <div className="pb-4 pt-2 flex justify-center gap-6">
+        <button 
+          onClick={() => setActiveTab(activeTab === 'decorate' ? null : 'decorate')}
+          className={`w-14 h-14 rounded-full flex flex-col items-center justify-center shadow-lg transition-colors ${activeTab === 'decorate' ? 'bg-[#C4A574]' : 'bg-[#D4B896] hover:bg-[#C4A574]'}`}
+        >
+          <span className="text-xl">🎨</span>
+          <span className="text-[10px] text-[#3D2914] font-bold">Decorate</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab(activeTab === 'shop' ? null : 'shop')}
+          className={`w-14 h-14 rounded-full flex flex-col items-center justify-center shadow-lg transition-colors ${activeTab === 'shop' ? 'bg-[#C4A574]' : 'bg-[#D4B896] hover:bg-[#C4A574]'}`}
+        >
+          <IsometricCarrot className="w-6 h-7" />
+          <span className="text-[10px] text-[#3D2914] font-bold">Shop</span>
+        </button>
+        <button 
+          onClick={() => { setOutfit([]); handleSignOut(); }}
+          className="w-14 h-14 rounded-full flex flex-col items-center justify-center shadow-lg bg-[#D4B896] hover:bg-[#C4A574]"
+        >
+          <Settings className="w-5 h-5 text-[#3D2914]" />
+          <span className="text-[10px] text-[#3D2914] font-bold">Settings</span>
+        </button>
       </div>
     </div>
+  );
+}
+
+// ========== MAIN COMPONENT ==========
+export default function RoomViewMain({ yardId, carrots: initialCarrots = 0, pet, profile, bankAccounts = [], user }: RoomViewProps) {
+  const router = useRouter();
+  const supabase = createClient();
+  
+  const isAdmin = user?.email === '2landonl10@gmail.com';
+  const [carrots, setCarrots] = useState(isAdmin ? 999999 : initialCarrots);
+  const [currentRoom, setCurrentRoom] = useState<string | null>(null);
+  const [outfit, setOutfit] = useState<string[]>([]);
+  
+  const [rooms, setRooms] = useState<Room[]>([
+    {
+      id: 'living-room',
+      name: 'Living Room',
+      floorColor: '#DEB887',
+      wallColor: '#E8D4B8',
+      items: [],
+      grid: Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null)),
+      position: { x: 50, y: 55 }
+    },
+    {
+      id: 'bedroom',
+      name: 'Bedroom',
+      floorColor: '#F5DEB3',
+      wallColor: '#FDF8F3',
+      items: [],
+      grid: Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null)),
+      position: { x: 20, y: 35 }
+    },
+    {
+      id: 'kitchen',
+      name: 'Kitchen',
+      floorColor: '#F5DEB3',
+      wallColor: '#FFE4C4',
+      items: [],
+      grid: Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null)),
+      position: { x: 80, y: 35 }
+    }
+  ]);
+
+  const [inventory, setInventory] = useState<{ id: string; uniqueId: string; type: string; category: string; roomId: string }[]>([]);
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const activeRoom = rooms.find(r => r.id === currentRoom);
+
+  const handleBuy = useCallback((itemId: string, category: string, price: number) => {
+    if (!isAdmin && carrots < price) return;
+    const roomId = currentRoom || 'living-room';
+    const newItem = { id: itemId, uniqueId: `${itemId}-${Date.now()}`, type: itemId, category, roomId };
+    setInventory(prev => [...prev, newItem]);
+    if (!isAdmin) setCarrots(prev => prev - price);
+  }, [carrots, isAdmin, currentRoom]);
+
+  const handlePlace = useCallback((itemId: string, x: number, y: number) => {
+    if (!currentRoom) return;
+    const item = inventory.find(i => i.uniqueId === itemId);
+    if (!item) return;
+    
+    const size = FURNITURE_SIZES[item.type] || { width: 1, height: 1 };
+    
+    setRooms(prev => prev.map(room => {
+      if (room.id === currentRoom) {
+        const newGrid = room.grid.map(row => [...row]);
+        for (let gy = y; gy < y + size.height; gy++) {
+          for (let gx = x; gx < x + size.width; gx++) {
+            newGrid[gy][gx] = item.uniqueId;
+          }
+        }
+        return {
+          ...room,
+          items: [...room.items, { id: item.id, uniqueId: item.uniqueId, type: item.type, gridX: x, gridY: y }],
+          grid: newGrid
+        };
+      }
+      return room;
+    }));
+    
+    setInventory(prev => prev.filter(i => i.uniqueId !== itemId));
+    setSelectedItem(null);
+  }, [inventory, currentRoom]);
+
+  const handleDelete = useCallback((uniqueId: string) => {
+    if (!currentRoom) return;
+    
+    setRooms(prev => prev.map(room => {
+      if (room.id === currentRoom) {
+        const item = room.items.find(i => i.uniqueId === uniqueId);
+        if (!item) return room;
+        
+        const size = FURNITURE_SIZES[item.type] || { width: 1, height: 1 };
+        const newGrid = room.grid.map(row => [...row]);
+        
+        for (let y = item.gridY; y < item.gridY + size.height; y++) {
+          for (let x = item.gridX; x < item.gridX + size.width; x++) {
+            if (newGrid[y] && newGrid[y][x] === uniqueId) newGrid[y][x] = null;
+          }
+        }
+        
+        return {
+          ...room,
+          items: room.items.filter(i => i.uniqueId !== uniqueId),
+          grid: newGrid
+        };
+      }
+      return room;
+    }));
+  }, [currentRoom]);
+
+  const setFloorColor = useCallback((color: string) => {
+    if (!currentRoom) return;
+    setRooms(prev => prev.map(r => r.id === currentRoom ? { ...r, floorColor: color } : r));
+  }, [currentRoom]);
+
+  const setWallColor = useCallback((color: string) => {
+    if (!currentRoom) return;
+    setRooms(prev => prev.map(r => r.id === currentRoom ? { ...r, wallColor: color } : r));
+  }, [currentRoom]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+  };
+
+  // Settings panel for island view
+  if (showSettings && !currentRoom) {
+    return (
+      <div className="flex flex-col h-screen" style={{ background: 'linear-gradient(180deg, #87CEEB 0%, #B8D4E8 50%, #D4E8D4 100%)' }}>
+        <div className="flex items-center justify-between px-4 py-3">
+          <button onClick={() => setShowSettings(false)} className="bg-white/90 px-3 py-1.5 rounded-full">
+            <span className="font-bold text-[#6B4423]">Back</span>
+          </button>
+          <span className="font-bold text-[#6B4423]">Settings</span>
+          <div className="w-16" />
+        </div>
+        
+        <div className="flex-1 p-4">
+          <div className="bg-white rounded-xl p-4 max-w-sm mx-auto">
+            <p className="text-sm text-[#8B7355] mb-2">{user?.email}</p>
+            {isAdmin && <span className="text-xs bg-[#FF8C42]/20 text-[#FF8C42] px-2 py-1 rounded-full">Admin</span>}
+            
+            <div className="mt-4">
+              <p className="text-sm font-bold text-[#6B4423] mb-2">Outfit</p>
+              <div className="flex gap-2">
+                <button onClick={() => setOutfit(prev => prev.includes('hat') ? prev.filter(o => o !== 'hat') : [...prev, 'hat'])} className={`p-2 rounded-lg ${outfit.includes('hat') ? 'bg-[#FF8C42]' : 'bg-[#F5EDE4]'}`}>🥕</button>
+                <button onClick={() => setOutfit(prev => prev.includes('glasses') ? prev.filter(o => o !== 'glasses') : [...prev, 'glasses'])} className={`p-2 rounded-lg ${outfit.includes('glasses') ? 'bg-[#FF8C42]' : 'bg-[#F5EDE4]'}`}>👓</button>
+                <button onClick={() => setOutfit(prev => prev.includes('bow') ? prev.filter(o => o !== 'bow') : [...prev, 'bow'])} className={`p-2 rounded-lg ${outfit.includes('bow') ? 'bg-[#FF8C42]' : 'bg-[#F5EDE4]'}`}>🎀</button>
+              </div>
+            </div>
+            
+            <button onClick={handleSignOut} className="w-full mt-4 bg-[#A67B5B] text-white py-2 rounded-xl font-bold">
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show island or room view
+  if (!currentRoom) {
+    return (
+      <IslandView 
+        rooms={rooms} 
+        onEnterRoom={setCurrentRoom}
+        carrots={carrots}
+        outfit={outfit}
+        onSettings={() => setShowSettings(true)}
+      />
+    );
+  }
+
+  return (
+    <RoomViewInner
+      room={activeRoom}
+      onBack={() => setCurrentRoom(null)}
+      carrots={carrots}
+      inventory={inventory.filter(i => i.roomId === currentRoom)}
+      placedItems={activeRoom?.items || []}
+      selectedItem={selectedItem}
+      setSelectedItem={setSelectedItem}
+      handleBuy={handleBuy}
+      handlePlace={handlePlace}
+      handleDelete={handleDelete}
+      setFloorColor={setFloorColor}
+      setWallColor={setWallColor}
+      outfit={outfit}
+      setOutfit={setOutfit}
+      handleSignOut={handleSignOut}
+      isAdmin={isAdmin}
+      user={user}
+    />
   );
 }
