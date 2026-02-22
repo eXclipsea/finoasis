@@ -256,10 +256,10 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
 
   // Desktop layout with sidebar
   const DesktopLayout = () => (
-    <div className="flex h-screen bg-gradient-to-br from-[#E8F4F8] via-[#D4E9F0] to-[#B8D4E3] overflow-hidden">
+    <div className="flex h-screen bg-gradient-to-br from-[#F5EDE4] via-[#E6D5C3] to-[#D4C4B0] overflow-hidden">
       {/* Left sidebar - Navigation */}
-      <div className="w-20 bg-white/80 backdrop-blur-xl border-r-2 border-[#B8D4E3] flex flex-col items-center py-6 gap-4 z-20">
-        <div className="w-14 h-14 bg-[#7EB8A2] rounded-2xl flex items-center justify-center shadow-lg mb-4">
+      <div className="w-20 bg-[#FDF8F3]/90 backdrop-blur-xl border-r-2 border-[#C9B8A4] flex flex-col items-center py-6 gap-4 z-20">
+        <div className="w-14 h-14 bg-[#A67B5B] rounded-2xl flex items-center justify-center shadow-lg mb-4">
           <Home className="w-7 h-7 text-white" />
         </div>
         
@@ -346,7 +346,7 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
 
       {/* Right sidebar - Content panels */}
       {activeTab && (
-        <div className="w-80 bg-white/90 backdrop-blur-xl border-l-2 border-[#B8D4E3] overflow-y-auto z-20">
+        <div className="w-80 bg-[#FDF8F3]/95 backdrop-blur-xl border-l-2 border-[#C9B8A4] overflow-y-auto z-20">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-black text-[#2D5A4A]">
@@ -357,9 +357,9 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
               </h2>
               <button 
                 onClick={() => setActiveTab(null)}
-                className="p-2 hover:bg-[#F5F9FB] rounded-xl transition-colors"
+                className="p-2 hover:bg-[#F5EDE4] rounded-xl transition-colors"
               >
-                <X className="w-5 h-5 text-[#5A8A7A]" />
+                <X className="w-5 h-5 text-[#6B4423]" />
               </button>
             </div>
             
@@ -375,9 +375,9 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
 
   // Mobile layout with bottom controls
   const MobileLayout = () => (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-[#E8F4F8] to-[#D4E9F0] overflow-hidden">
+    <div className="flex flex-col h-screen bg-gradient-to-b from-[#F5EDE4] to-[#E6D5C3] overflow-hidden">
       {/* Top resource bars */}
-      <div className="flex justify-center gap-3 p-4 pt-12 bg-white/50 backdrop-blur-sm border-b border-[#B8D4E3]">
+      <div className="flex justify-center gap-3 p-4 pt-12 bg-[#FDF8F3]/50 backdrop-blur-sm border-b border-[#C9B8A4]">
         <ResourceBar 
           icon={<Coins className="w-3 h-3" />} 
           value={coins} 
@@ -454,7 +454,7 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
       {/* Mobile modal for tabs */}
       {activeTab && (
         <div className="absolute inset-0 bg-black/30 z-50 flex items-end">
-          <div className="w-full bg-white rounded-t-3xl p-6 max-h-[70vh] overflow-y-auto animate-slide-up">
+          <div className="w-full bg-[#FDF8F3] rounded-t-3xl p-6 max-h-[70vh] overflow-y-auto animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-black text-[#2D5A4A]">
                 {activeTab === 'shop' && 'Shop'}
@@ -464,9 +464,9 @@ export default function RoomView({ yardId, coins: initialCoins, pet, profile, ba
               </h2>
               <button 
                 onClick={() => setActiveTab(null)}
-                className="p-2 hover:bg-[#F5F9FB] rounded-xl"
+                className="p-2 hover:bg-[#F5EDE4] rounded-xl"
               >
-                <X className="w-5 h-5 text-[#5A8A7A]" />
+                <X className="w-5 h-5 text-[#6B4423]" />
               </button>
             </div>
             
@@ -531,8 +531,8 @@ function NavButton({ icon, label, active, onClick, mobile = false }: {
       onClick={onClick}
       className={`flex flex-col items-center gap-1 p-3 rounded-2xl transition-all duration-200 ${
         active 
-          ? 'bg-[#7EB8A2]/20 text-[#2D5A4A]' 
-          : 'text-[#8AB3A8] hover:bg-[#F5F9FB] hover:text-[#5A8A7A]'
+          ? 'bg-[#A67B5B]/20 text-[#6B4423]' 
+          : 'text-[#8B7355] hover:bg-[#F5EDE4] hover:text-[#6B4423]'
       }`}
     >
       {icon}
@@ -617,7 +617,7 @@ function ShopPanel({
           key={item.id}
           onClick={() => onBuy(item.id, item.category, item.price)}
           disabled={!isAdmin && coins < item.price}
-          className="bg-[#F5F9FB] hover:bg-white border-2 border-[#B8D4E3] hover:border-[#7EB8A2] rounded-2xl p-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+          className="bg-[#FDF8F3] hover:bg-white border-2 border-[#C9B8A4] hover:border-[#A67B5B] rounded-2xl p-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
         >
           <div className="flex justify-center mb-2">
             <FurnitureItem type={item.id} className="group-hover:scale-110 transition-transform" />
@@ -648,7 +648,7 @@ function ClosetPanel({
         <button
           key={outfit.id}
           onClick={() => onSelect?.(outfit)}
-          className="bg-[#F5F9FB] hover:bg-white border-2 border-[#B8D4E3] hover:border-[#E8919C] rounded-2xl p-4 transition-all"
+          className="bg-[#FDF8F3] hover:bg-white border-2 border-[#C9B8A4] hover:border-[#E8919C] rounded-2xl p-4 transition-all"
         >
           <div className="flex justify-center mb-2">
             <FurnitureItem type={outfit.id} />
@@ -673,10 +673,10 @@ function BankPanel({
     <div className="space-y-4">
       {bankAccounts.length > 0 ? (
         bankAccounts.map((account) => (
-          <div key={account.id} className="bg-[#F5F9FB] rounded-2xl p-4 border-2 border-[#B8D4E3]">
+          <div key={account.id} className="bg-[#FDF8F3] rounded-2xl p-4 border-2 border-[#C9B8A4]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#7EB8A2]/20 rounded-xl flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-[#7EB8A2]" />
+              <div className="w-10 h-10 bg-[#A67B5B]/20 rounded-xl flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-[#A67B5B]" />
               </div>
               <div>
                 <div className="font-bold text-[#2D5A4A]">{account.institution_name}</div>
@@ -699,7 +699,7 @@ function BankPanel({
           {onConnect ? (
             <button 
               onClick={onConnect}
-              className="bg-[#7EB8A2] hover:bg-[#6BA08A] text-white font-bold py-2 px-6 rounded-xl transition-all"
+              className="bg-[#A67B5B] hover:bg-[#8B7355] text-white font-bold py-2 px-6 rounded-xl transition-all"
             >
               Connect Bank
             </button>
@@ -725,9 +725,9 @@ function SettingsPanel({
 }) {
   return (
     <div className="space-y-4">
-      <div className="bg-[#F5F9FB] rounded-2xl p-4 border-2 border-[#B8D4E3]">
-        <div className="font-bold text-[#2D5A4A] mb-1">Email</div>
-        <div className="text-[#5A8A7A] text-sm">{user.email}</div>
+      <div className="bg-[#FDF8F3] rounded-2xl p-4 border-2 border-[#C9B8A4]">
+        <div className="font-bold text-[#6B4423] mb-1">Email</div>
+        <div className="text-[#8B7355] text-sm">{user.email}</div>
         {isAdmin && (
           <div className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-[#E8A87C]/20 text-[#E8A87C] rounded-full text-xs font-bold">
             <Sparkles className="w-3 h-3" />
