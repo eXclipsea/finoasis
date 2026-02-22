@@ -99,6 +99,10 @@ export default async function LoginPage({
               Create Oasis
             </Link>
           </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-xs text-slate-300 font-mono">FinOasis 2.0</p>
+          </div>
         </form>
       </div>
     </div>

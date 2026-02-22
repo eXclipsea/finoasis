@@ -36,6 +36,7 @@ export default async function SignupPage({
     }
 
     // 3. Otherwise, if Email Confirmations are ENABLED, ask user to check email
+    // (FinOasis: Auto-login enabled)
     return redirect('/signup?message=Check email to continue');
   };
 
@@ -113,6 +114,10 @@ export default async function SignupPage({
             <Link href="/login" className="text-emerald-600 hover:text-emerald-700 font-bold hover:underline">
               Log in
             </Link>
+          </div>
+          
+          <div className="mt-8 text-center">
+            <p className="text-xs text-slate-300 font-mono">FinOasis 2.0</p>
           </div>
         </form>
       </div>
