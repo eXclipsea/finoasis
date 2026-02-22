@@ -407,6 +407,228 @@ export const IsometricLamp: React.FC<FurnitureProps> = ({ className }) => (
   </svg>
 );
 
+// ========== COLORFUL DECOR ITEMS (Focus Friend Style) ==========
+
+// Stack of colorful books
+export const IsometricBooks: React.FC<FurnitureProps> = ({ className }) => (
+  <svg viewBox="0 0 50 40" className={className}>
+    <g transform="translate(25, 20)">
+      {/* Shadow */}
+      <ellipse cx="0" cy="15" rx="20" ry="5" fill={COLORS.shadowLight} />
+      
+      {/* Book 1 - Pink */}
+      <path d="M-15 8 L0 0 L15 8 L0 16 Z" fill="#FF9AA2" />
+      <path d="M-15 8 L0 16 L0 20 L-15 12 Z" fill="#E8888F" />
+      <path d="M0 16 L15 8 L15 12 L0 20 Z" fill="#D6777E" />
+      
+      {/* Book 2 - Teal */}
+      <path d="M-13 2 L0 -6 L13 2 L0 10 Z" fill="#A0E7E5" />
+      <path d="M-13 2 L0 10 L0 14 L-13 6 Z" fill="#8CD5D3" />
+      <path d="M0 10 L13 2 L13 6 L0 14 Z" fill="#78C3C1" />
+      
+      {/* Book 3 - Yellow */}
+      <path d="M-11 -4 L0 -12 L11 -4 L0 4 Z" fill="#FFF4BD" />
+      <path d="M-11 -4 L0 4 L0 8 L-11 0 Z" fill="#EBE0A8" />
+      <path d="M0 4 L11 -4 L11 0 L0 8 Z" fill="#D7CC94" />
+    </g>
+  </svg>
+);
+
+// Hanging vines
+export const IsometricVines: React.FC<FurnitureProps> = ({ className }) => (
+  <svg viewBox="0 0 60 80" className={className}>
+    <g transform="translate(30, 10)">
+      {/* Main vine stems */}
+      <path d="M0 0 Q-5 20 -8 35 Q-12 50 -5 65" stroke={COLORS.greenDark} strokeWidth="3" fill="none" strokeLinecap="round" />
+      <path d="M0 0 Q8 15 5 30 Q2 45 10 60" stroke={COLORS.green} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <path d="M0 0 Q3 12 12 25 Q15 40 8 55" stroke="#9BC48E" strokeWidth="2" fill="none" strokeLinecap="round" />
+      
+      {/* Leaves */}
+      <ellipse cx="-8" cy="20" rx="5" ry="8" fill={COLORS.green} transform="rotate(-30 -8 20)" />
+      <ellipse cx="-5" cy="35" rx="4" ry="7" fill={COLORS.greenDark} transform="rotate(20 -5 35)" />
+      <ellipse cx="-8" cy="50" rx="5" ry="8" fill={COLORS.green} transform="rotate(-15 -8 50)" />
+      <ellipse cx="5" cy="25" rx="4" ry="6" fill="#9BC48E" transform="rotate(40 5 25)" />
+      <ellipse cx="8" cy="40" rx="4" ry="7" fill={COLORS.green} transform="rotate(-25 8 40)" />
+      <ellipse cx="10" cy="55" rx="3" ry="6" fill={COLORS.greenDark} transform="rotate(15 10 55)" />
+      <ellipse cx="12" cy="30" rx="4" ry="6" fill="#9BC48E" transform="rotate(35 12 30)" />
+      
+      {/* Cute flowers */}
+      <g transform="translate(-5, 65)">
+        <circle cx="0" cy="0" r="4" fill="#FFB6C1" />
+        <circle cx="-3" cy="-2" r="3" fill="#FFB6C1" />
+        <circle cx="3" cy="-2" r="3" fill="#FFB6C1" />
+        <circle cx="0" cy="-4" r="3" fill="#FFB6C1" />
+        <circle cx="0" cy="-1" r="2" fill="#FFE4B5" />
+      </g>
+      
+      <g transform="translate(8, 55)">
+        <circle cx="0" cy="0" r="3" fill="#DDA0DD" />
+        <circle cx="-2" cy="-2" r="2.5" fill="#DDA0DD" />
+        <circle cx="2" cy="-2" r="2.5" fill="#DDA0DD" />
+        <circle cx="0" cy="-3" r="2.5" fill="#DDA0DD" />
+        <circle cx="0" cy="-1" r="1.5" fill="#FFF" />
+      </g>
+    </g>
+  </svg>
+);
+
+// Cute stickers/decals
+export const IsometricStarSticker: React.FC<FurnitureProps> = ({ className }) => (
+  <svg viewBox="0 0 40 40" className={className}>
+    <g transform="translate(20, 20)">
+      {/* Star with soft glow */}
+      <circle cx="0" cy="0" r="16" fill="#FFD700" opacity="0.3" />
+      <path d="M0 -12 L3 -4 L12 -4 L5 2 L8 10 L0 6 L-8 10 L-5 2 L-12 -4 L-3 -4 Z" fill="#FFD700" />
+      <path d="M0 -10 L2 -4 L8 -4 L4 0 L6 6 L0 3 L-6 6 L-4 0 L-8 -4 L-2 -4 Z" fill="#FFED4E" />
+      {/* Sparkle */}
+      <circle cx="-8" cy="-8" r="2" fill="white" opacity="0.8" />
+    </g>
+  </svg>
+);
+
+export const IsometricHeartSticker: React.FC<FurnitureProps> = ({ className }) => (
+  <svg viewBox="0 0 40 40" className={className}>
+    <g transform="translate(20, 20)">
+      <circle cx="0" cy="0" r="15" fill="#FF6B9D" opacity="0.3" />
+      <path d="M0 10 C-10 0 -15 -8 -8 -12 C-4 -14 0 -8 0 -5 C0 -8 4 -14 8 -12 C15 -8 10 0 0 10" fill="#FF6B9D" />
+      <path d="M0 8 C-8 0 -12 -6 -6 -10 C-3 -11 0 -7 0 -4 C0 -7 3 -11 6 -10 C12 -6 8 0 0 8" fill="#FF8FB0" />
+      <ellipse cx="-4" cy="-8" rx="2" ry="3" fill="white" opacity="0.6" />
+    </g>
+  </svg>
+);
+
+export const IsometricCloudSticker: React.FC<FurnitureProps> = ({ className }) => (
+  <svg viewBox="0 0 50 35" className={className}>
+    <g transform="translate(25, 17)">
+      <ellipse cx="0" cy="0" rx="18" ry="10" fill="#E8F4F8" />
+      <ellipse cx="-10" cy="2" rx="10" ry="8" fill="#E8F4F8" />
+      <ellipse cx="10" cy="2" rx="10" ry="8" fill="#E8F4F8" />
+      <ellipse cx="-5" cy="-5" rx="8" ry="7" fill="#F0F8FF" />
+      <ellipse cx="5" cy="-5" rx="8" ry="7" fill="#F0F8FF" />
+      {/* Blush */}
+      <circle cx="-8" cy="3" r="2" fill="#FFB6C1" opacity="0.5" />
+      <circle cx="8" cy="3" r="2" fill="#FFB6C1" opacity="0.5" />
+    </g>
+  </svg>
+);
+
+// Picture frame
+export const IsometricPictureFrame: React.FC<FurnitureProps> = ({ className }) => (
+  <svg viewBox="0 0 60 70" className={className}>
+    <g transform="translate(30, 35)">
+      {/* Frame */}
+      <path d="M-20 -25 L20 -25 L20 25 L-20 25 Z" fill={COLORS.brown} stroke={COLORS.brownDark} strokeWidth="2" />
+      <path d="M-16 -21 L16 -21 L16 21 L-16 21 Z" fill={COLORS.cream} />
+      
+      {/* Cute picture - landscape with sun */}
+      <rect x="-14" y="-19" width="28" height="38" fill="#B8E0F0" />
+      <circle cx="8" cy="-10" r="5" fill="#FFD700" />
+      <path d="M-14 5 L-5 0 L5 3 L14 -2 L14 19 L-14 19 Z" fill={COLORS.green} />
+      <path d="M-14 10 L-8 6 L0 9 L8 4 L14 8 L14 19 L-14 19 Z" fill={COLORS.greenDark} />
+    </g>
+  </svg>
+);
+
+// Hanging plant with macrame
+export const IsometricHangingPlant: React.FC<FurnitureProps> = ({ className }) => (
+  <svg viewBox="0 0 60 100" className={className}>
+    <g transform="translate(30, 15)">
+      {/* Hanging string */}
+      <line x1="0" y1="0" x2="0" y2="25" stroke={COLORS.beigeDark} strokeWidth="2" />
+      
+      {/* Macrame holder */}
+      <path d="M-15 25 L-8 45 L0 50 L8 45 L15 25" fill="none" stroke={COLORS.cream} strokeWidth="3" strokeLinecap="round" />
+      <line x1="-15" y1="25" x2="-5" y2="35" stroke={COLORS.cream} strokeWidth="2" />
+      <line x1="15" y1="25" x2="5" y2="35" stroke={COLORS.cream} strokeWidth="2" />
+      
+      {/* Pot */}
+      <ellipse cx="0" cy="45" rx="12" ry="6" fill={COLORS.brown} />
+      <path d="M-12 45 L-8 65 L8 65 L12 45" fill={COLORS.brown} />
+      <path d="M-12 45 L-8 65 L-8 67 L-12 47 Z" fill={COLORS.brownDark} />
+      
+      {/* Trailing vines */}
+      <path d="M-5 65 Q-15 75 -12 85 Q-10 95 -5 90" stroke={COLORS.green} strokeWidth="2" fill="none" />
+      <path d="M5 65 Q15 75 12 85 Q10 95 5 90" stroke={COLORS.greenDark} strokeWidth="2" fill="none" />
+      <path d="M0 65 Q-5 80 0 92" stroke="#9BC48E" strokeWidth="2" fill="none" />
+      
+      {/* Leaves */}
+      <ellipse cx="-12" cy="75" rx="4" ry="6" fill={COLORS.green} />
+      <ellipse cx="12" cy="75" rx="4" ry="6" fill={COLORS.greenDark} />
+      <ellipse cx="-8" cy="85" rx="3" ry="5" fill="#9BC48E" />
+      <ellipse cx="8" cy="85" rx="3" ry="5" fill={COLORS.green} />
+      <ellipse cx="0" cy="90" rx="3" ry="5" fill={COLORS.greenDark} />
+    </g>
+  </svg>
+);
+
+// Coffee cup
+export const IsometricCoffeeCup: React.FC<FurnitureProps> = ({ className }) => (
+  <svg viewBox="0 0 30 35" className={className}>
+    <g transform="translate(15, 17)">
+      {/* Shadow */}
+      <ellipse cx="0" cy="14" rx="10" ry="3" fill={COLORS.shadowLight} />
+      
+      {/* Saucer */}
+      <ellipse cx="0" cy="10" rx="12" ry="4" fill={COLORS.cream} />
+      
+      {/* Cup body */}
+      <path d="M-8 0 L-6 10 L6 10 L8 0 Z" fill="#FFF5E6" />
+      <path d="M-8 0 L-6 10 L-6 11 L-9 1 Z" fill="#EBE0D5" />
+      <path d="M8 0 L6 10 L6 11 L9 1 Z" fill="#D4C9BE" />
+      
+      {/* Coffee liquid */}
+      <ellipse cx="0" cy="0" rx="8" ry="3" fill="#6B4423" />
+      
+      {/* Handle */}
+      <path d="M8 2 Q12 2 12 6 Q12 10 8 8" stroke="#FFF5E6" strokeWidth="2" fill="none" />
+      
+      {/* Steam */}
+      <path d="M-3 -5 Q-5 -10 -3 -15" stroke="white" strokeWidth="1.5" fill="none" opacity="0.6" />
+      <path d="M3 -5 Q5 -10 3 -15" stroke="white" strokeWidth="1.5" fill="none" opacity="0.6" />
+    </g>
+  </svg>
+);
+
+// Toy ball
+export const IsometricToyBall: React.FC<FurnitureProps> = ({ className }) => (
+  <svg viewBox="0 0 40 40" className={className}>
+    <g transform="translate(20, 20)">
+      {/* Shadow */}
+      <ellipse cx="0" cy="14" rx="12" ry="4" fill={COLORS.shadowLight} />
+      
+      {/* Ball */}
+      <circle cx="0" cy="0" r="14" fill="#FF6B6B" />
+      <circle cx="-4" cy="-4" r="4" fill="white" opacity="0.4" />
+      
+      {/* Stripes */}
+      <path d="M-10 -10 Q0 0 10 -10" stroke="#FFE66D" strokeWidth="3" fill="none" />
+      <path d="M-12 2 Q0 5 12 2" stroke="#4ECDC4" strokeWidth="3" fill="none" />
+      <path d="M-8 8 Q0 12 8 8" stroke="#DDA0DD" strokeWidth="3" fill="none" />
+    </g>
+  </svg>
+);
+
+// Cushion/Pillow
+export const IsometricCushion: React.FC<FurnitureProps> = ({ className }) => (
+  <svg viewBox="0 0 50 35" className={className}>
+    <g transform="translate(25, 17)">
+      {/* Shadow */}
+      <ellipse cx="0" cy="12" rx="20" ry="5" fill={COLORS.shadowLight} />
+      
+      {/* Cushion */}
+      <ellipse cx="0" cy="5" rx="18" ry="10" fill="#FFB6C1" />
+      <ellipse cx="-3" cy="3" rx="14" ry="7" fill="#FFC8D6" />
+      
+      {/* Pattern dots */}
+      <circle cx="-8" cy="5" r="2" fill="white" opacity="0.7" />
+      <circle cx="0" cy="7" r="2" fill="white" opacity="0.7" />
+      <circle cx="8" cy="5" r="2" fill="white" opacity="0.7" />
+      <circle cx="-4" cy="2" r="1.5" fill="white" opacity="0.7" />
+      <circle cx="4" cy="2" r="1.5" fill="white" opacity="0.7" />
+    </g>
+  </svg>
+);
+
 // ========== FURNITURE ITEMS DATA ==========
 export type FurnitureCategory = 'furniture' | 'plants' | 'decor' | 'doors';
 
@@ -426,15 +648,26 @@ export const FURNITURE_ITEMS: FurnitureItem[] = [
   { id: 'dog-bed', name: 'Dog Bed', category: 'furniture', price: 40, component: IsometricDogBed },
 ];
 
-export const PLANT_ITEMS: FurnitureItem[] = [
-  { id: 'plant', name: 'Potted Plant', category: 'plants', price: 30, component: IsometricPlant },
-];
-
 export const DECOR_ITEMS: FurnitureItem[] = [
   { id: 'rug', name: 'Patterned Rug', category: 'decor', price: 35, component: IsometricRug },
   { id: 'dog-bowl', name: 'Dog Bowl', category: 'decor', price: 15, component: IsometricDogBowl },
   { id: 'lamp', name: 'Floor Lamp', category: 'decor', price: 45, component: IsometricLamp },
   { id: 'window', name: 'Window', category: 'decor', price: 0, component: IsometricWindow },
+  // Colorful Focus Friend style items
+  { id: 'books', name: 'Colorful Books', category: 'decor', price: 25, component: IsometricBooks },
+  { id: 'vines', name: 'Hanging Vines', category: 'decor', price: 30, component: IsometricVines },
+  { id: 'star-sticker', name: 'Star Sticker', category: 'decor', price: 10, component: IsometricStarSticker },
+  { id: 'heart-sticker', name: 'Heart Sticker', category: 'decor', price: 10, component: IsometricHeartSticker },
+  { id: 'cloud-sticker', name: 'Cloud Sticker', category: 'decor', price: 10, component: IsometricCloudSticker },
+  { id: 'picture-frame', name: 'Picture Frame', category: 'decor', price: 35, component: IsometricPictureFrame },
+  { id: 'coffee-cup', name: 'Coffee Cup', category: 'decor', price: 15, component: IsometricCoffeeCup },
+  { id: 'toy-ball', name: 'Toy Ball', category: 'decor', price: 20, component: IsometricToyBall },
+  { id: 'cushion', name: 'Pink Cushion', category: 'decor', price: 25, component: IsometricCushion },
+];
+
+export const PLANT_ITEMS: FurnitureItem[] = [
+  { id: 'plant', name: 'Potted Plant', category: 'plants', price: 30, component: IsometricPlant },
+  { id: 'hanging-plant', name: 'Hanging Plant', category: 'plants', price: 40, component: IsometricHangingPlant },
 ];
 
 export const DOOR_ITEMS: FurnitureItem[] = [
