@@ -19,16 +19,15 @@ import PlaidLinkButton from '@/components/plaid/PlaidLinkButton';
 import { useRouter } from 'next/navigation';
 import { 
   FurnitureItem, 
-  PotatoCharacter, 
-  DogCharacter,
-  CarrotIcon,
+  IsometricPotato, 
+  IsometricDog,
+  IsometricCarrot,
   FURNITURE_ITEMS, 
   PLANT_ITEMS, 
   DECOR_ITEMS,
-  CLOTHING_ITEMS,
   WALL_COLORS,
   FLOOR_COLORS,
-  COLORS
+  COLORS,
 } from '@/components/game/FurnitureAssets';
 
 interface RoomViewProps {
@@ -131,16 +130,16 @@ export default function RoomView({
     {
       id: 'living-room',
       name: 'Living Room',
-      floorColor: COLORS.floorWood,
-      wallColor: COLORS.wallBeige,
+      floorColor: '#DEB887',
+      wallColor: '#E8D4B8',
       items: [],
       doors: [{ targetRoomId: 'bedroom', position: 'right' }]
     },
     {
       id: 'bedroom',
       name: 'Bedroom',
-      floorColor: COLORS.floorLight,
-      wallColor: COLORS.wallBlue,
+      floorColor: '#F5DEB3',
+      wallColor: '#FDF8F3',
       items: [],
       doors: [{ targetRoomId: 'living-room', position: 'left' }]
     }
@@ -283,18 +282,6 @@ export default function RoomView({
           <path d="M0 120 Q150 80 300 110 Q450 140 600 90 Q750 50 900 100 Q1050 150 1200 110 L1200 200 L0 200 Z" 
                 fill="#A67B5B" opacity="0.3"/>
         </svg>
-        {/* Carrot farm patch in distance */}
-        <div className="absolute bottom-[20%] left-[5%] opacity-40">
-          <svg width="60" height="40" viewBox="0 0 70 50">
-            <ellipse cx="35" cy="40" rx="30" ry="8" fill="#5D3A1A"/>
-            <ellipse cx="20" cy="38" rx="3" ry="5" fill="#FF8C42"/>
-            <path d="M20 35 L17 25" stroke="#4CAF50" strokeWidth="2"/>
-            <ellipse cx="35" cy="38" rx="3" ry="6" fill="#FF8C42"/>
-            <path d="M35 34 L32 24" stroke="#4CAF50" strokeWidth="2"/>
-            <ellipse cx="50" cy="38" rx="3" ry="5" fill="#FF8C42"/>
-            <path d="M50 35 L47 25" stroke="#4CAF50" strokeWidth="2"/>
-          </svg>
-        </div>
         {/* Floating carrot particles */}
         {[...Array(5)].map((_, i) => (
           <div 
@@ -307,7 +294,7 @@ export default function RoomView({
               animationDelay: `${i * 0.5}s`
             }}
           >
-            <CarrotIcon className="w-6 h-8 opacity-20" />
+            <IsometricCarrot className="w-6 h-8 opacity-20" />
           </div>
         ))}
       </div>
@@ -341,7 +328,7 @@ export default function RoomView({
 
         {/* Carrot Currency */}
         <div className="flex items-center gap-2 bg-[#FDF8F3]/90 backdrop-blur px-4 py-2 rounded-full border-2 border-[#FF8C42]">
-          <CarrotIcon className="w-5 h-7" />
+          <IsometricCarrot className="w-5 h-7" />
           <span className="font-black text-[#FF8C42] text-lg">{carrots}</span>
         </div>
       </div>
@@ -452,7 +439,7 @@ export default function RoomView({
                 transform: 'translate(-50%, -50%)'
               }}
             >
-              <DogCharacter isMoving={isMovingPotato} />
+              <IsometricDog isMoving={isMovingPotato} />
             </div>
 
             {/* Potato Character (Player) */}
@@ -464,9 +451,8 @@ export default function RoomView({
                 transform: 'translate(-50%, -50%)'
               }}
             >
-              <PotatoCharacter 
+              <IsometricPotato 
                 isMoving={isMovingPotato} 
-                isHappy={activeTab === 'shop'}
                 outfit={outfit}
               />
             </div>
@@ -477,49 +463,49 @@ export default function RoomView({
       {/* Right Panel - Active Tab Content */}
       {activeTab && (
         <div className="absolute top-[80px] right-4 w-72 bg-[#FDF8F3]/95 backdrop-blur-xl rounded-3xl border-2 border-[#C9B77D] shadow-2xl z-30 max-h-[60vh] overflow-y-auto">
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black text-[#6B4423]">
-                {activeTab === 'shop' && '🥕 Shop'}
-                {activeTab === 'decorate' && '🎨 Decorate'}
-                {activeTab === 'settings' && '⚙️ Settings'}
-              </h2>
-              <button 
-                onClick={() => { setActiveTab(null); setSelectedItem(null); }}
-                className="p-2 hover:bg-[#F5EDE4] rounded-xl transition-colors"
-              >
-                <X className="w-5 h-5 text-[#6B4423]" />
-              </button>
-            </div>
-
-            {activeTab === 'shop' && (
-              <ShopPanel carrots={carrots} onBuy={handleBuyItem} isAdmin={isAdmin} />
-            )}
-
-            {activeTab === 'decorate' && (
-              <DecoratePanel 
-                inventory={inventory}
-                selectedItem={selectedItem}
-                onPlace={handlePlaceItem}
-                onMove={handleMoveItem}
-                onDelete={handleDeleteItem}
-                onColorChange={handleColorChange}
-                currentFloorColor={currentRoom.floorColor}
-                currentWallColor={currentRoom.wallColor}
-              />
-            )}
-
-            {activeTab === 'settings' && (
-              <SettingsPanel 
-                onSignOut={handleSignOut} 
-                user={user} 
-                isAdmin={isAdmin}
-                outfit={outfit}
-                onOutfitChange={setOutfit}
-              />
-            )}
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-black text-[#6B4423]">
+              {activeTab === 'shop' && '🥕 Shop'}
+              {activeTab === 'decorate' && '🎨 Decorate'}
+              {activeTab === 'settings' && '⚙️ Settings'}
+            </h2>
+            <button 
+              onClick={() => { setActiveTab(null); setSelectedItem(null); }}
+              className="p-2 hover:bg-[#F5EDE4] rounded-xl transition-colors"
+            >
+              <X className="w-5 h-5 text-[#6B4423]" />
+            </button>
           </div>
+
+          {activeTab === 'shop' && (
+            <ShopPanel carrots={carrots} onBuy={handleBuyItem} isAdmin={isAdmin} />
+          )}
+
+          {activeTab === 'decorate' && (
+            <DecoratePanel 
+              inventory={inventory}
+              selectedItem={selectedItem}
+              onPlace={handlePlaceItem}
+              onMove={handleMoveItem}
+              onDelete={handleDeleteItem}
+              onColorChange={handleColorChange}
+              currentFloorColor={currentRoom.floorColor}
+              currentWallColor={currentRoom.wallColor}
+            />
+          )}
+
+          {activeTab === 'settings' && (
+            <SettingsPanel 
+              onSignOut={handleSignOut} 
+              user={user} 
+              isAdmin={isAdmin}
+              outfit={outfit}
+              onOutfitChange={setOutfit}
+            />
+          )}
         </div>
+      </div>
       )}
 
       {/* Bottom Toolbar - Custom Potato Buttons */}
@@ -536,7 +522,7 @@ export default function RoomView({
           
           {/* Shop Button */}
           <ToolbarButton
-            icon={<CarrotIcon className="w-8 h-10" />}
+            icon={<IsometricCarrot className="w-8 h-10" />}
             label="Shop"
             active={activeTab === 'shop'}
             onClick={() => setActiveTab(activeTab === 'shop' ? null : 'shop')}
@@ -608,7 +594,7 @@ function ShopPanel({
             </div>
             <div className="font-bold text-[#6B4423] text-xs text-center leading-tight">{item.name}</div>
             <div className="flex items-center justify-center gap-1 mt-1">
-              <CarrotIcon className="w-3 h-4" />
+              <IsometricCarrot className="w-3 h-4" />
               <span className={`text-sm font-black ${isAdmin || carrots >= item.price ? 'text-[#FF8C42]' : 'text-red-400'}`}>
                 {isAdmin ? 'FREE' : item.price}
               </span>
