@@ -117,7 +117,7 @@ export default async function SignupPage({
           </div>
           
           <div className="mt-8 text-center">
-            <p className="text-xs text-slate-300 font-mono">FinOasis 2.0</p>
+            <p className="text-xs text-slate-300 font-mono">FinOasis v2.1 (Live)</p>
           </div>
         </form>
       </div>
