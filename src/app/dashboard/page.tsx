@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import YardView from '@/components/game/YardView';
+import RoomView from '@/components/game/RoomView';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -40,15 +40,13 @@ export default async function DashboardPage() {
     .eq('user_id', user.id);
 
   return (
-    <div className="w-screen h-screen overflow-hidden bg-[#8BC34A]">
-      <YardView 
-        yardId={yard?.id || ''} 
-        coins={yard?.coins || 0} 
-        pet={pet}
-        profile={profile}
-        bankAccounts={bankAccounts || []}
-        user={user}
-      />
-    </div>
+    <RoomView 
+      yardId={yard?.id || ''} 
+      coins={yard?.coins || 0} 
+      pet={pet}
+      profile={profile}
+      bankAccounts={bankAccounts || []}
+      user={user}
+    />
   );
 }

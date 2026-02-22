@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Quicksand } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const quicksand = Quicksand({ 
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+});
 
 export const metadata: Metadata = {
-  title: 'Penniply - Grow Your Wealth',
-  description: 'Turn saving money into a thriving garden sanctuary with your own financial pet companion.',
+  title: 'BudgetFriend - Your Financial Companion',
+  description: 'Turn saving money into a cozy room decoration game. Connect your bank, track your budget, and grow your virtual home!',
 };
 
 export default function RootLayout({
@@ -16,8 +19,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <main className="min-h-screen bg-[#FDFBF7] flex flex-col">
+      <body className={quicksand.className}>
+        <main className="min-h-screen bg-[#E8F4F8] flex flex-col">
           {children}
         </main>
       </body>

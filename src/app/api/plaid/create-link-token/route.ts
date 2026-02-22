@@ -17,7 +17,7 @@ export async function POST() {
         // This should correspond to a unique id for the current user.
         client_user_id: user.id,
       },
-      client_name: 'Penniply',
+      client_name: 'BudgetFriend',
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
       language: 'en',

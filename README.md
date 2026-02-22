@@ -1,14 +1,15 @@
-# Penniply
+# BudgetFriend
 
-Penniply is a gamified student savings app that turns budgeting into a thriving garden sanctuary.
+BudgetFriend is a gamified budgeting app inspired by Focus Friend that makes saving money cozy and fun.
 
 ## Features
 
-- **Gamified Savings**: Link your bank account and earn coins for saving money.
-- **Virtual Sanctuary**: Build and decorate your own 2.5D isometric home and yard.
-- **Pet Companion**: Raise a financial pet companion that grows as your wealth grows.
+- **Cozy Budgeting**: Link your bank account and earn coins for saving money.
+- **Virtual Room**: Build and decorate your own isometric cozy room.
+- **Cute Companion**: Your own budget buddy that celebrates your savings wins.
+- **Furniture & Clothing**: Shop for cute items to customize your space and character.
 - **Secure Integration**: Uses Plaid for bank connections and Stripe for premium subscriptions.
-- **Modern Stack**: Built with Next.js 14, Supabase, Tailwind CSS, and TypeScript.
+- **Modern Stack**: Built with Next.js 16, Supabase, Tailwind CSS, and TypeScript.
 
 ## Getting Started
 
