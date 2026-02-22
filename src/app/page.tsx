@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Home, Coins, Leaf, Sprout, PawPrint } from 'lucide-react';
+import { ArrowRight, Home, Leaf, Sprout, PawPrint } from 'lucide-react';
 
 export default function LandingPage() {
   return (

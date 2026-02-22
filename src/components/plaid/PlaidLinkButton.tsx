@@ -24,6 +24,7 @@ export default function PlaidLinkButton() {
     createLinkToken();
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onSuccess = async (public_token: string, metadata: any) => {
     setLoading(true);
     try {
@@ -34,7 +35,7 @@ export default function PlaidLinkButton() {
         },
         body: JSON.stringify({
           public_token,
-          institution_name: metadata.institution.name,
+          institution_name: metadata.institution?.name || 'Unknown Bank',
         }),
       });
       

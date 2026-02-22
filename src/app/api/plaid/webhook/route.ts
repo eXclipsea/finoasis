@@ -66,14 +66,12 @@ export async function POST(request: Request) {
           // Positive amount means money leaving (spending) -> Bad if it's over budget, but we'll simplify.
           
           let xpAwarded = 0;
-          let isSavings = false;
 
           if (txn.amount < 0) {
             // Income or transfer in! Award XP.
             xpAwarded = 50;
             totalXpEarned += xpAwarded;
             savingsAmount += Math.abs(txn.amount);
-            isSavings = true;
           } else if (txn.amount > 0 && txn.amount < 20) {
             // Small responsible spending (e.g., coffee) - minor XP
             xpAwarded = 5;
@@ -124,8 +122,8 @@ export async function POST(request: Request) {
             .single();
 
           if (pet) {
-            let newHappiness = Math.min(100, pet.happiness + 10);
-            let newHealth = Math.min(100, pet.health + 5);
+            const newHappiness = Math.min(100, pet.happiness + 10);
+            const newHealth = Math.min(100, pet.health + 5);
             let newStage = pet.stage;
 
             // Simple evolution logic

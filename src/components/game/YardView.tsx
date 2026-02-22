@@ -7,7 +7,13 @@ import { createClient } from '@/lib/supabase/client';
 interface YardProps {
   yardId: string;
   coins: number;
-  pet: any;
+  pet: {
+    id: string;
+    name: string;
+    stage: string;
+    happiness: number;
+    health: number;
+  } | null;
 }
 
 interface PlacedItem {
@@ -47,6 +53,7 @@ export default function YardView({ yardId, coins: initialCoins, pet }: YardProps
       setItems(loadedItems);
     };
     fetchItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yardId]);
 
   const handleGridClick = async (x: number, y: number) => {
