@@ -24,7 +24,7 @@ export const COLORS = {
   greenDark: '#5D8A7A',
 };
 
-// ========== ISOMETRIC POTATO CHARACTER ==========
+// ========== BEAN/POTATO CHARACTER (Focus Friend Style) ==========
 interface CharacterProps {
   className?: string;
   isMoving?: boolean;
@@ -39,73 +39,94 @@ export const IsometricPotato: React.FC<CharacterProps> = ({
   return (
     <svg viewBox="0 0 100 120" className={`${className} ${isMoving ? 'animate-bounce' : ''}`}>
       <defs>
-        {/* Main body gradient - isometric lighting */}
-        <linearGradient id="potatoTop" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={COLORS.peachLight} />
-          <stop offset="100%" stopColor={COLORS.peach} />
-        </linearGradient>
-        <linearGradient id="potatoLeft" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={COLORS.peach} />
-          <stop offset="100%" stopColor={COLORS.peachDark} />
-        </linearGradient>
-        <linearGradient id="potatoRight" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={COLORS.peach} />
-          <stop offset="100%" stopColor={COLORS.brown} />
-        </linearGradient>
+        {/* Smooth bean body gradient */}
+        <radialGradient id="beanBody" cx="40%" cy="30%" r="70%">
+          <stop offset="0%" stopColor="#D4B896" />
+          <stop offset="50%" stopColor="#C4A574" />
+          <stop offset="100%" stopColor="#A68B5B" />
+        </radialGradient>
+        {/* Soft shadow */}
+        <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+          <feOffset dx="0" dy="2" result="offsetblur" />
+          <feComponentTransfer>
+            <feFuncA type="linear" slope="0.3" />
+          </feComponentTransfer>
+          <feMerge>
+            <feMergeNode />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
       
-      {/* Shadow */}
-      <ellipse cx="50" cy="110" rx="35" ry="8" fill={COLORS.shadowMedium} />
+      {/* Ground shadow */}
+      <ellipse cx="50" cy="105" rx="30" ry="8" fill="#8B7355" opacity="0.3" />
       
-      {/* Potato body - isometric block shape */}
-      <g transform="translate(50, 65)">
-        {/* Top face */}
-        <path d="M-30 -20 L0 -35 L30 -20 L0 -5 Z" fill="url(#potatoTop)" />
-        {/* Left face */}
-        <path d="M-30 -20 L0 -5 L0 45 L-30 30 Z" fill="url(#potatoLeft)" />
-        {/* Right face */}
-        <path d="M0 -5 L30 -20 L30 30 L0 45 Z" fill="url(#potatoRight)" />
-      </g>
+      {/* Bean body - smooth rounded shape */}
+      <path d="M50 25 
+               C70 25, 80 45, 80 70 
+               C80 95, 65 105, 50 105 
+               C35 105, 20 95, 20 70 
+               C20 45, 30 25, 50 25 Z" 
+            fill="url(#beanBody)" 
+            filter="url(#softShadow)" />
       
-      {/* Eyes - on the front face */}
-      <g transform="translate(50, 55)">
+      {/* Eyes - simple ovals */}
+      <g transform="translate(50, 60)">
         {/* Left eye */}
-        <ellipse cx="-12" cy="0" rx="6" ry="8" fill="#3D3D3D" />
-        <circle cx="-10" cy="-2" r="3" fill="white" />
+        <ellipse cx="-12" cy="0" rx="5" ry="7" fill="#3D2914" />
+        <circle cx="-10" cy="-2" r="2" fill="white" />
         {/* Right eye */}
-        <ellipse cx="12" cy="0" rx="6" ry="8" fill="#3D3D3D" />
-        <circle cx="14" cy="-2" r="3" fill="white" />
+        <ellipse cx="12" cy="0" rx="5" ry="7" fill="#3D2914" />
+        <circle cx="14" cy="-2" r="2" fill="white" />
       </g>
       
-      {/* Blush */}
-      <circle cx="32" cy="70" r="4" fill="#FFB6C1" opacity="0.6" />
-      <circle cx="68" cy="70" r="4" fill="#FFB6C1" opacity="0.6" />
+      {/* Blush - pink circles on cheeks */}
+      <ellipse cx="28" cy="72" rx="6" ry="4" fill="#FFB6C1" opacity="0.7" />
+      <ellipse cx="72" cy="72" rx="6" ry="4" fill="#FFB6C1" opacity="0.7" />
       
       {/* Small smile */}
-      <path d="M45 75 Q50 80 55 75" stroke="#3D3D3D" strokeWidth="2" strokeLinecap="round" fill="none" />
+      <path d="M45 78 Q50 82 55 78" stroke="#3D2914" strokeWidth="2" strokeLinecap="round" fill="none" />
       
-      {/* Sprout on top */}
-      <g transform="translate(50, 30)">
-        <path d="M0 0 Q-8 -15 0 -25 Q8 -15 0 0" fill={COLORS.green} />
-        <path d="M0 -25 Q5 -30 8 -22" stroke={COLORS.greenDark} strokeWidth="2" fill="none" />
+      {/* Single leaf sprout on top */}
+      <g transform="translate(50, 22)">
+        {/* Main leaf */}
+        <path d="M0 0 Q-12 -15 -8 -30 Q0 -35 8 -30 Q12 -15 0 0" fill="#7EB8A2" />
+        <path d="M0 0 Q-12 -15 -8 -30 Q0 -35 8 -30 Q12 -15 0 0" fill="none" stroke="#6BA08A" strokeWidth="1" />
+        {/* Leaf vein */}
+        <path d="M0 0 Q0 -15 0 -28" stroke="#6BA08A" strokeWidth="1.5" fill="none" />
       </g>
       
-      {/* Tiny arms */}
-      <ellipse cx="22" cy="75" rx="5" ry="8" fill={COLORS.peachDark} transform="rotate(-20 22 75)" />
-      <ellipse cx="78" cy="75" rx="5" ry="8" fill={COLORS.peachDark} transform="rotate(20 78 75)" />
+      {/* Tiny stubby arms */}
+      <ellipse cx="22" cy="75" rx="4" ry="6" fill="#B8956A" transform="rotate(-30 22 75)" />
+      <ellipse cx="78" cy="75" rx="4" ry="6" fill="#A68B5B" transform="rotate(30 78 75)" />
+      
+      {/* Tiny feet */}
+      <ellipse cx="38" cy="102" rx="5" ry="3" fill="#B8956A" />
+      <ellipse cx="62" cy="102" rx="5" ry="3" fill="#A68B5B" />
       
       {/* Accessories */}
       {outfit.includes('hat') && (
-        <g transform="translate(50, 28)">
-          <path d="M-15 0 L15 0 L10 -15 L-10 -15 Z" fill={COLORS.carrot} />
-          <path d="M0 -15 L5 -25 L0 -22 L-5 -25 Z" fill={COLORS.carrotLight} />
+        <g transform="translate(50, 18)">
+          {/* Carrot hat */}
+          <path d="M-12 0 L12 0 L8 -12 L-8 -12 Z" fill="#FF8C42" />
+          <path d="M0 -12 L4 -22 L0 -19 L-4 -22 Z" fill="#FFB347" />
         </g>
       )}
       {outfit.includes('glasses') && (
-        <g transform="translate(50, 55)">
-          <circle cx="-12" cy="0" r="9" fill="none" stroke="#3D3D3D" strokeWidth="2" />
-          <circle cx="12" cy="0" r="9" fill="none" stroke="#3D3D3D" strokeWidth="2" />
-          <line x1="-3" y1="0" x2="3" y2="0" stroke="#3D3D3D" strokeWidth="2" />
+        <g transform="translate(50, 58)">
+          {/* Round glasses */}
+          <circle cx="-12" cy="0" r="10" fill="none" stroke="#3D2914" strokeWidth="2" />
+          <circle cx="12" cy="0" r="10" fill="none" stroke="#3D2914" strokeWidth="2" />
+          <line x1="-2" y1="0" x2="2" y2="0" stroke="#3D2914" strokeWidth="2" />
+        </g>
+      )}
+      {outfit.includes('bow') && (
+        <g transform="translate(50, 30)">
+          {/* Cute bow */}
+          <path d="M0 0 L-8 -5 L-8 5 Z" fill="#FF6B9D" />
+          <path d="M0 0 L8 -5 L8 5 Z" fill="#FF6B9D" />
+          <circle cx="0" cy="0" r="3" fill="#FF8FB0" />
         </g>
       )}
     </svg>
