@@ -36,7 +36,7 @@ export default async function SignupPage({
     }
 
     // 3. Otherwise, if Email Confirmations are ENABLED, ask user to check email
-    // (FinOasis: Auto-login enabled)
+    // (Penniply: Auto-login enabled)
     return redirect('/signup?message=Check email to continue');
   };
 
@@ -59,7 +59,7 @@ export default async function SignupPage({
             <Sprout className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Start Your Journey</h1>
-          <p className="text-slate-500 font-medium mt-2">Join FinOasis for free</p>
+          <p className="text-slate-500 font-medium mt-2">Join Penniply for free</p>
         </div>
 
         <form className="flex flex-col gap-4" action={signUp}>
@@ -117,7 +117,7 @@ export default async function SignupPage({
           </div>
           
           <div className="mt-8 text-center">
-            <p className="text-xs text-slate-300 font-mono">FinOasis v2.1 (Live)</p>
+            <p className="text-xs text-slate-300 font-mono">Penniply v1.0 (Live)</p>
           </div>
         </form>
       </div>

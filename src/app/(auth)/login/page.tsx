@@ -101,7 +101,7 @@ export default async function LoginPage({
           </div>
 
           <div className="mt-8 text-center">
-            <p className="text-xs text-slate-300 font-mono">FinOasis v2.1 (Live)</p>
+            <p className="text-xs text-slate-300 font-mono">Penniply v1.0 (Live)</p>
           </div>
         </form>
       </div>

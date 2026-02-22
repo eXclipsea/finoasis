@@ -10,7 +10,7 @@ export default function LandingPage() {
           <div className="bg-gradient-to-br from-emerald-400 to-teal-500 p-2 rounded-xl shadow-sm">
             <Home className="h-5 w-5 text-white" />
           </div>
-          <span className="font-bold text-xl tracking-tight text-slate-900">FinOasis</span>
+          <span className="font-bold text-xl tracking-tight text-slate-900">Penniply</span>
         </div>
         <nav className="flex items-center gap-6">
           <Link href="/login" className="text-sm font-semibold text-slate-600 hover:text-emerald-600 transition-colors">
@@ -112,9 +112,9 @@ export default function LandingPage() {
             <div className="bg-slate-800 p-2 rounded-xl">
               <Home className="h-5 w-5 text-emerald-400" />
             </div>
-            <span className="font-bold text-2xl text-white tracking-tight">FinOasis</span>
+            <span className="font-bold text-2xl text-white tracking-tight">Penniply</span>
           </div>
-          <p className="font-medium text-slate-500">© {new Date().getFullYear()} FinOasis. Plant the seeds of wealth.</p>
+          <p className="font-medium text-slate-500">© {new Date().getFullYear()} Penniply. Plant the seeds of wealth.</p>
         </div>
       </footer>
     </div>

@@ -5,8 +5,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'FinOasis - Gamified Student Savings',
-  description: 'Turn saving money into a city-building adventure with your own financial pet companion.',
+  title: 'Penniply - Grow Your Wealth',
+  description: 'Turn saving money into a thriving garden sanctuary with your own financial pet companion.',
 };
 
 export default function RootLayout({

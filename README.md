@@ -1,4 +1,14 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Penniply
+
+Penniply is a gamified student savings app that turns budgeting into a thriving garden sanctuary.
+
+## Features
+
+- **Gamified Savings**: Link your bank account and earn coins for saving money.
+- **Virtual Sanctuary**: Build and decorate your own 2.5D isometric home and yard.
+- **Pet Companion**: Raise a financial pet companion that grows as your wealth grows.
+- **Secure Integration**: Uses Plaid for bank connections and Stripe for premium subscriptions.
+- **Modern Stack**: Built with Next.js 14, Supabase, Tailwind CSS, and TypeScript.
 
 ## Getting Started
 

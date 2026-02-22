@@ -59,7 +59,7 @@ export default async function DashboardPage() {
           <div className="bg-gradient-to-br from-emerald-400 to-teal-500 p-1.5 rounded-lg shadow-sm">
             <Home className="h-5 w-5 text-white" />
           </div>
-          <span className="font-bold text-xl text-slate-900 tracking-tight">FinOasis</span>
+          <span className="font-bold text-xl text-slate-900 tracking-tight">Penniply</span>
           {isPremium && (
             <span className="ml-2 bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1 shadow-sm">
               <Sparkles className="h-3 w-3" /> PRO
